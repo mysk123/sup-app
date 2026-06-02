@@ -1,0 +1,64 @@
+/*
+ * Sup. App global styles
+ * 既存のSup.(sup-app.org)とブランドカラー・タイポを共有
+ */
+
+:root {
+  --bg: #FAFAF7;
+  --card-bg: #ffffff;
+  --text-main: #0e0e0e;
+  --text-sub: #6b7280;
+  --text-soft: #9ca3af;
+  --accent: #0f5b3e;
+  --accent-light: #e8f0eb;
+  --accent-dark: #0a4530;
+  --accent-deep: #06352a;
+  --warm-accent: #c8835f;
+  --dark-bg: #0a1612;
+  --dark-text: #f0f5f1;
+  --dark-text-sub: #8aa399;
+  --dark-accent: #4ca47e;
+  --border: #ebe8e2;
+  --shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 4px 16px rgba(0, 0, 0, 0.03);
+  --shadow-lg: 0 4px 24px rgba(0, 0, 0, 0.06), 0 12px 48px rgba(0, 0, 0, 0.04);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+html,
+body {
+  background: var(--bg);
+}
+
+body {
+  overflow-x: hidden;
+  font-family: 'Inter', 'Noto Sans JP', -apple-system, BlinkMacSystemFont,
+    'Hiragino Kaku Gothic ProN', 'Hiragino Sans', 'Yu Gothic UI', 'Segoe UI',
+    sans-serif;
+  color: var(--text-main);
+  line-height: 1.7;
+  font-size: 16px;
+  font-feature-settings: 'palt' 1, 'kern' 1;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+.container {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 32px 24px 80px;
+}
+
+@media (max-width: 600px) {
+  .container {
+    padding: 18px 18px 60px;
+  }
+}
