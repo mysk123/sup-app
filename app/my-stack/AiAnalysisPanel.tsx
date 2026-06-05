@@ -2,7 +2,8 @@
 
 /**
  * AI 包括分析パネル(クライアントコンポーネント)
- * ボタン → /api/audit/ai を叩く → 結果を表示
+ * - ボタン → /api/audit/ai を叩く → 結果を表示
+ * - Free プランは月 N 回ゲート、超えたら Stripe Checkout へ誘導
  */
 import { useState } from 'react';
 
@@ -21,14 +22,41 @@ type Analysis = {
 type ApiResponse = {
   analysis?: Analysis;
   error?: string;
+  message?: string;
   usage?: { input_tokens: number; output_tokens: number };
   stack_count?: number;
+  billing?: BillingStatusFromApi;
 };
 
-export default function AiAnalysisPanel() {
+type BillingStatusFromApi = {
+  plan: 'free' | 'pro';
+  ai_used_this_month: number;
+  ai_limit_this_month: number | null;
+  ai_remaining: number | null;
+};
+
+export type BillingStatus = {
+  plan: 'free' | 'pro';
+  ai_used_this_month: number;
+  ai_limit_this_month: number | null;
+  ai_remaining: number | null;
+};
+
+export default function AiAnalysisPanel({
+  initialBilling
+}: {
+  initialBilling: BillingStatus;
+}) {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<Analysis | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [limitReached, setLimitReached] = useState(
+    initialBilling.plan === 'free' &&
+      initialBilling.ai_remaining !== null &&
+      initialBilling.ai_remaining <= 0
+  );
+  const [billing, setBilling] = useState<BillingStatus>(initialBilling);
+  const [upgrading, setUpgrading] = useState(false);
 
   async function runAnalysis() {
     setLoading(true);
@@ -37,10 +65,24 @@ export default function AiAnalysisPanel() {
     try {
       const res = await fetch('/api/audit/ai', { method: 'POST' });
       const data: ApiResponse = await res.json();
-      if (!res.ok) {
-        setError(data.error ?? `エラー(${res.status})`);
+
+      if (res.status === 402) {
+        // 上限到達 → アップグレード CTA
+        setLimitReached(true);
+        if (data.billing) setBilling(data.billing);
+        setError(null);
+      } else if (!res.ok) {
+        setError(data.message ?? data.error ?? `エラー(${res.status})`);
       } else if (data.analysis) {
         setResult(data.analysis);
+        // 楽観的に残り回数 -1
+        if (billing.ai_remaining !== null) {
+          setBilling({
+            ...billing,
+            ai_used_this_month: billing.ai_used_this_month + 1,
+            ai_remaining: Math.max(0, billing.ai_remaining - 1)
+          });
+        }
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
@@ -49,22 +91,53 @@ export default function AiAnalysisPanel() {
     }
   }
 
+  async function upgradeToPro() {
+    setUpgrading(true);
+    try {
+      const res = await fetch('/api/stripe/checkout', { method: 'POST' });
+      const data: { url?: string; error?: string } = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        setError(data.error ?? 'Checkout の起動に失敗しました');
+        setUpgrading(false);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+      setUpgrading(false);
+    }
+  }
+
+  const isPro = billing.plan === 'pro';
+
   return (
     <div style={{ marginBottom: 28 }}>
       <div
         style={{
-          fontSize: 11,
-          fontFamily: 'Inter, sans-serif',
-          letterSpacing: '0.15em',
-          color: 'var(--accent)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
           marginBottom: 14,
-          fontWeight: 700
+          gap: 12,
+          flexWrap: 'wrap'
         }}
       >
-        AI ANALYSIS — スタック包括分析
+        <div
+          style={{
+            fontSize: 11,
+            fontFamily: 'Inter, sans-serif',
+            letterSpacing: '0.15em',
+            color: 'var(--accent)',
+            fontWeight: 700
+          }}
+        >
+          AI ANALYSIS — スタック包括分析
+        </div>
+        <PlanBadge billing={billing} />
       </div>
 
-      {!result && !loading && (
+      {/* 初期 / アイドル状態 */}
+      {!result && !loading && !limitReached && (
         <div
           style={{
             background: 'var(--card-bg)',
@@ -104,6 +177,73 @@ export default function AiAnalysisPanel() {
         </div>
       )}
 
+      {/* 上限到達状態(Free のみ) */}
+      {limitReached && !loading && !result && (
+        <div
+          style={{
+            background: '#fff8eb',
+            border: '1px solid #fcdca2',
+            borderRadius: 12,
+            padding: '18px 22px'
+          }}
+        >
+          <div
+            style={{
+              fontSize: 10,
+              fontFamily: 'Inter, sans-serif',
+              letterSpacing: '0.16em',
+              fontWeight: 700,
+              color: '#8a5a06',
+              marginBottom: 8
+            }}
+          >
+            FREE LIMIT REACHED
+          </div>
+          <div
+            style={{
+              fontSize: 15,
+              fontWeight: 700,
+              marginBottom: 6,
+              lineHeight: 1.4
+            }}
+          >
+            今月の AI 分析(
+            {billing.ai_limit_this_month ?? 0}回)を使い切りました
+          </div>
+          <div
+            style={{
+              fontSize: 13,
+              color: 'var(--text-sub)',
+              lineHeight: 1.75,
+              marginBottom: 14
+            }}
+          >
+            Pro プラン(月額 ¥980)にアップグレードすると、AI
+            包括分析が無制限になります。サプリを増やすたびに分析して、
+            スタックを最適化していけます。
+          </div>
+          <button
+            onClick={upgradeToPro}
+            disabled={upgrading}
+            style={{
+              background: 'var(--accent)',
+              color: 'white',
+              border: 'none',
+              padding: '11px 22px',
+              borderRadius: 10,
+              fontSize: 14,
+              fontWeight: 700,
+              cursor: upgrading ? 'wait' : 'pointer',
+              fontFamily: 'inherit',
+              opacity: upgrading ? 0.7 : 1
+            }}
+          >
+            {upgrading ? 'Stripe へ移動中…' : 'Pro にアップグレード →'}
+          </button>
+        </div>
+      )}
+
+      {/* ローディング */}
       {loading && (
         <div
           style={{
@@ -140,6 +280,7 @@ export default function AiAnalysisPanel() {
         </div>
       )}
 
+      {/* エラー */}
       {error && (
         <div
           style={{
@@ -174,9 +315,9 @@ export default function AiAnalysisPanel() {
         </div>
       )}
 
+      {/* 結果 */}
       {result && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {/* 全体評価 */}
           <div
             style={{
               background: 'var(--card-bg)',
@@ -208,12 +349,10 @@ export default function AiAnalysisPanel() {
             </div>
           </div>
 
-          {/* 改善案リスト */}
           {result.recommendations.map((rec, i) => (
             <RecommendationCard key={i} rec={rec} />
           ))}
 
-          {/* 総括 */}
           <div
             style={{
               background: 'var(--accent-light)',
@@ -246,27 +385,85 @@ export default function AiAnalysisPanel() {
             </div>
           </div>
 
-          {/* 再生成ボタン */}
-          <button
-            onClick={runAnalysis}
-            style={{
-              marginTop: 8,
-              background: 'transparent',
-              color: 'var(--text-sub)',
-              border: '1px solid var(--border)',
-              padding: '8px 14px',
-              borderRadius: 8,
-              fontSize: 12,
-              cursor: 'pointer',
-              fontFamily: 'inherit',
-              alignSelf: 'flex-start'
-            }}
-          >
-            再生成
-          </button>
+          {/* 再生成 or アップグレード */}
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            {!isPro &&
+              billing.ai_remaining !== null &&
+              billing.ai_remaining <= 0 && (
+                <button
+                  onClick={upgradeToPro}
+                  disabled={upgrading}
+                  style={{
+                    background: 'var(--accent)',
+                    color: 'white',
+                    border: 'none',
+                    padding: '9px 18px',
+                    borderRadius: 8,
+                    fontSize: 13,
+                    cursor: upgrading ? 'wait' : 'pointer',
+                    fontFamily: 'inherit',
+                    fontWeight: 700
+                  }}
+                >
+                  {upgrading
+                    ? 'Stripe へ移動中…'
+                    : 'Pro でもっと分析する →'}
+                </button>
+              )}
+            {(isPro ||
+              (billing.ai_remaining !== null && billing.ai_remaining > 0)) && (
+              <button
+                onClick={runAnalysis}
+                style={{
+                  background: 'transparent',
+                  color: 'var(--text-sub)',
+                  border: '1px solid var(--border)',
+                  padding: '8px 14px',
+                  borderRadius: 8,
+                  fontSize: 12,
+                  cursor: 'pointer',
+                  fontFamily: 'inherit'
+                }}
+              >
+                再生成
+              </button>
+            )}
+          </div>
         </div>
       )}
     </div>
+  );
+}
+
+function PlanBadge({ billing }: { billing: BillingStatus }) {
+  if (billing.plan === 'pro') {
+    return (
+      <span
+        style={{
+          fontSize: 11,
+          fontFamily: 'Inter, sans-serif',
+          letterSpacing: '0.1em',
+          fontWeight: 700,
+          background: 'var(--accent)',
+          color: 'white',
+          padding: '4px 10px',
+          borderRadius: 100
+        }}
+      >
+        PRO · 無制限
+      </span>
+    );
+  }
+  return (
+    <span
+      style={{
+        fontSize: 11,
+        color: 'var(--text-sub)',
+        fontWeight: 600
+      }}
+    >
+      今月 {billing.ai_used_this_month} / {billing.ai_limit_this_month} 回
+    </span>
   );
 }
 

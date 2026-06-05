@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { addStackItem, deleteStackItem, toggleActiveStackItem } from './actions';
 import { auditStack, type AuditFinding } from '@/lib/audit/engine';
 import AiAnalysisPanel from './AiAnalysisPanel';
+import { getBillingStatus } from '@/lib/billing/usage';
 
 type StackItem = {
   id: string;
@@ -41,6 +42,7 @@ export default async function MyStackPage() {
 
   const stackItems: StackItem[] = items ?? [];
   const findings = auditStack(stackItems);
+  const billing = await getBillingStatus();
 
   return (
     <div className="container" style={{ maxWidth: 720 }}>
@@ -147,8 +149,15 @@ export default async function MyStackPage() {
       {findings.length > 0 && <AuditSection findings={findings} />}
 
       {/* AI 包括分析 */}
-      {stackItems.filter((i) => i.is_active).length > 0 && (
-        <AiAnalysisPanel />
+      {stackItems.filter((i) => i.is_active).length > 0 && billing && (
+        <AiAnalysisPanel
+          initialBilling={{
+            plan: billing.plan,
+            ai_used_this_month: billing.ai_used_this_month,
+            ai_limit_this_month: billing.ai_limit_this_month,
+            ai_remaining: billing.ai_remaining
+          }}
+        />
       )}
 
       {/* 追加フォーム */}

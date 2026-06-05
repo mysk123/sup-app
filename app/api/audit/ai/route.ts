@@ -11,6 +11,7 @@ import { NextResponse } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
 import { createClient } from '@/lib/supabase/server';
 import { auditStack, type StackItem as AuditStackItem } from '@/lib/audit/engine';
+import { getBillingStatus, recordAiUsage } from '@/lib/billing/usage';
 
 type DbStackItem = {
   id: string;
@@ -104,6 +105,24 @@ export async function POST() {
     return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
   }
 
+  // 課金ゲート: Free プランは月3回まで
+  const billing = await getBillingStatus();
+  if (
+    billing &&
+    billing.plan === 'free' &&
+    billing.ai_remaining !== null &&
+    billing.ai_remaining <= 0
+  ) {
+    return NextResponse.json(
+      {
+        error: 'limit_reached',
+        message: `今月の AI 分析(${billing.ai_limit_this_month}回)を使い切りました。Pro プランにアップグレードすると無制限になります。`,
+        billing
+      },
+      { status: 402 }
+    );
+  }
+
   // スタック取得(active のみ)
   const { data: items, error: dbError } = await supabase
     .from('stack_items')
@@ -192,6 +211,13 @@ JSON形式で、指定されたスキーマに従って返してください。`
     }
 
     const analysis = JSON.parse(textBlock.text);
+
+    // 使用ログ記録(成功時のみ)。失敗してもユーザーには影響させない
+    await recordAiUsage({
+      user_id: user.id,
+      input_tokens: response.usage.input_tokens,
+      output_tokens: response.usage.output_tokens
+    });
 
     return NextResponse.json({
       analysis,
