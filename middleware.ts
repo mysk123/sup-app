@@ -1,21 +1,21 @@
 /**
  * Next.js middleware — Supabase の auth セッション cookie を自動更新する
  * (ログイン状態をリクエスト毎に維持するために必要)
+ *
+ * @supabase/ssr 0.5+ の getAll / setAll パターン
+ * (古い get/set/remove は chunk cookie が壊れる既知問題あり)
  */
-import { createServerClient, type CookieOptions } from '@supabase/ssr';
+import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
 export async function middleware(request: NextRequest) {
-  let response = NextResponse.next({
-    request: { headers: request.headers }
-  });
+  let supabaseResponse = NextResponse.next({ request });
 
-  // env が未設定なら何もしない(初期デプロイ時など)
   if (
     !process.env.NEXT_PUBLIC_SUPABASE_URL ||
     !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
   ) {
-    return response;
+    return supabaseResponse;
   }
 
   const supabase = createServerClient(
@@ -23,41 +23,38 @@ export async function middleware(request: NextRequest) {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
     {
       cookies: {
-        get(name: string) {
-          return request.cookies.get(name)?.value;
+        getAll() {
+          return request.cookies.getAll();
         },
-        set(name: string, value: string, options: CookieOptions) {
-          request.cookies.set({ name, value, ...options });
-          response = NextResponse.next({
-            request: { headers: request.headers }
-          });
-          response.cookies.set({ name, value, ...options });
-        },
-        remove(name: string, options: CookieOptions) {
-          request.cookies.set({ name, value: '', ...options });
-          response = NextResponse.next({
-            request: { headers: request.headers }
-          });
-          response.cookies.set({ name, value: '', ...options });
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value }) =>
+            request.cookies.set(name, value)
+          );
+          supabaseResponse = NextResponse.next({ request });
+          cookiesToSet.forEach(({ name, value, options }) =>
+            supabaseResponse.cookies.set(name, value, options)
+          );
         }
       }
     }
   );
 
+  // 必ず getUser() を呼ぶ(セッション cookie の refresh)
   await supabase.auth.getUser();
 
-  return response;
+  return supabaseResponse;
 }
 
 export const config = {
   matcher: [
     /*
-     * 以下のパス以外でmiddlewareを実行:
+     * 以下のパス以外で middleware を実行:
      * - _next/static (静的アセット)
      * - _next/image (画像最適化)
      * - favicon.ico
      * - 画像ファイル
+     * - /api/stripe/webhook (Stripe からの raw body を触らない)
      */
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)'
+    '/((?!_next/static|_next/image|favicon.ico|api/stripe/webhook|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)'
   ]
 };

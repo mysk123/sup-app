@@ -72,7 +72,9 @@ export default function AiAnalysisPanel({
         if (data.billing) setBilling(data.billing);
         setError(null);
       } else if (!res.ok) {
-        setError(data.message ?? data.error ?? `エラー(${res.status})`);
+        setError(
+          `分析エラー: ${data.message ?? data.error ?? `(${res.status})`}`
+        );
       } else if (data.analysis) {
         setResult(data.analysis);
         // 楽観的に残り回数 -1
@@ -99,11 +101,15 @@ export default function AiAnalysisPanel({
       if (data.url) {
         window.location.href = data.url;
       } else {
-        setError(data.error ?? 'Checkout の起動に失敗しました');
+        setError(
+          `アップグレードエラー: ${data.error ?? 'Checkout の起動に失敗しました'}`
+        );
         setUpgrading(false);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
+      setError(
+        `アップグレードエラー: ${err instanceof Error ? err.message : String(err)}`
+      );
       setUpgrading(false);
     }
   }
@@ -316,24 +322,27 @@ export default function AiAnalysisPanel({
             marginBottom: 10
           }}
         >
-          <strong>分析に失敗しました</strong>
+          <strong>問題が発生しました</strong>
           <div style={{ marginTop: 6 }}>{error}</div>
-          <button
-            onClick={runAnalysis}
-            style={{
-              marginTop: 10,
-              background: 'transparent',
-              color: '#991b1b',
-              border: '1px solid #fecaca',
-              padding: '6px 12px',
-              borderRadius: 8,
-              fontSize: 12,
-              cursor: 'pointer',
-              fontFamily: 'inherit'
-            }}
-          >
-            再試行
-          </button>
+          <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+            <button
+              onClick={() => {
+                setError(null);
+              }}
+              style={{
+                background: 'transparent',
+                color: '#991b1b',
+                border: '1px solid #fecaca',
+                padding: '6px 12px',
+                borderRadius: 8,
+                fontSize: 12,
+                cursor: 'pointer',
+                fontFamily: 'inherit'
+              }}
+            >
+              閉じる
+            </button>
+          </div>
         </div>
       )}
 

@@ -1,8 +1,11 @@
 /**
  * Supabase server client
  * Server Components / Route Handlers / Server Actions から使う
+ *
+ * @supabase/ssr 0.5+ の getAll / setAll パターン
+ * (古い get/set/remove は chunk cookie が壊れる既知問題あり)
  */
-import { createServerClient, type CookieOptions } from '@supabase/ssr';
+import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 
 export function createClient() {
@@ -13,22 +16,16 @@ export function createClient() {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        get(name: string) {
-          return cookieStore.get(name)?.value;
+        getAll() {
+          return cookieStore.getAll();
         },
-        set(name: string, value: string, options: CookieOptions) {
+        setAll(cookiesToSet) {
           try {
-            cookieStore.set({ name, value, ...options });
+            cookiesToSet.forEach(({ name, value, options }) =>
+              cookieStore.set(name, value, options)
+            );
           } catch {
-            // Server Component から呼ばれた場合は middleware が
-            // セッションを更新するので無視してOK
-          }
-        },
-        remove(name: string, options: CookieOptions) {
-          try {
-            cookieStore.set({ name, value: '', ...options });
-          } catch {
-            // 同上
+            // Server Component から呼ばれた場合は middleware で更新する
           }
         }
       }
