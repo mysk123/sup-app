@@ -209,19 +209,23 @@ export const SYNERGIES: Synergy[] = [
   }
 ];
 
-/** ユーザー入力(name + brand)から成分を検出する */
+/** ユーザー入力(name + brand)から成分を検出する(最初の1つだけ) */
 export function detectIngredient(text: string): Ingredient | null {
+  const all = detectAllIngredients(text);
+  return all.length > 0 ? all[0] : null;
+}
+
+/**
+ * テキストから含まれる全ての成分を検出する
+ * (コンビ製品で複数成分が detected_ingredients に入る場合用)
+ */
+export function detectAllIngredients(text: string): Ingredient[] {
   const lower = text.toLowerCase();
-  // より厳密にマッチさせるため、キーワードが長い順にチェック
-  const sorted = [...INGREDIENTS].sort((a, b) => {
-    const aMax = Math.max(...a.match_keywords.map((k) => k.length));
-    const bMax = Math.max(...b.match_keywords.map((k) => k.length));
-    return bMax - aMax;
-  });
-  for (const ing of sorted) {
+  const matched: Ingredient[] = [];
+  for (const ing of INGREDIENTS) {
     if (ing.match_keywords.some((kw) => lower.includes(kw.toLowerCase()))) {
-      return ing;
+      matched.push(ing);
     }
   }
-  return null;
+  return matched;
 }

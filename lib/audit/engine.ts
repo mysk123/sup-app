@@ -7,7 +7,7 @@ import {
   INGREDIENTS,
   INTERACTIONS,
   SYNERGIES,
-  detectIngredient,
+  detectAllIngredients,
   type Ingredient,
   type IngredientKey,
   type FindingSeverity
@@ -20,6 +20,7 @@ export type StackItem = {
   dosage: string | null;
   timing: string[] | null;
   is_active: boolean;
+  detected_ingredients?: string | null;
 };
 
 export interface AuditFinding {
@@ -31,14 +32,15 @@ export interface AuditFinding {
   related_item_ids?: string[];
 }
 
-/** 各 stack_item から検出された成分のマップを作る */
+/** 各 stack_item から検出された成分のリストのマップを作る(複数成分対応) */
 function buildItemIngredientMap(
   items: StackItem[]
-): Map<string, Ingredient | null> {
-  const map = new Map<string, Ingredient | null>();
+): Map<string, Ingredient[]> {
+  const map = new Map<string, Ingredient[]>();
   for (const item of items) {
-    const text = `${item.name} ${item.brand ?? ''}`;
-    map.set(item.id, detectIngredient(text));
+    // AI 推測済みの成分テキストも検出対象に含める
+    const text = `${item.name} ${item.brand ?? ''} ${item.detected_ingredients ?? ''}`;
+    map.set(item.id, detectAllIngredients(text));
   }
   return map;
 }
@@ -46,14 +48,15 @@ function buildItemIngredientMap(
 /** 重複検出: 同じ成分が複数アイテムに存在 */
 function checkDuplicates(
   items: StackItem[],
-  itemToIngredient: Map<string, Ingredient | null>
+  itemToIngredient: Map<string, Ingredient[]>
 ): AuditFinding[] {
   const byKey = new Map<IngredientKey, StackItem[]>();
   for (const item of items) {
-    const ing = itemToIngredient.get(item.id);
-    if (!ing) continue;
-    if (!byKey.has(ing.key)) byKey.set(ing.key, []);
-    byKey.get(ing.key)!.push(item);
+    const ings = itemToIngredient.get(item.id) ?? [];
+    for (const ing of ings) {
+      if (!byKey.has(ing.key)) byKey.set(ing.key, []);
+      byKey.get(ing.key)!.push(item);
+    }
   }
 
   const findings: AuditFinding[] = [];
@@ -77,16 +80,17 @@ function checkDuplicates(
 /** 干渉・注意ルール検出 */
 function checkInteractions(
   items: StackItem[],
-  itemToIngredient: Map<string, Ingredient | null>
+  itemToIngredient: Map<string, Ingredient[]>
 ): AuditFinding[] {
   const presentKeys = new Set<IngredientKey>();
   const keyToItems = new Map<IngredientKey, string[]>();
   for (const item of items) {
-    const ing = itemToIngredient.get(item.id);
-    if (!ing) continue;
-    presentKeys.add(ing.key);
-    if (!keyToItems.has(ing.key)) keyToItems.set(ing.key, []);
-    keyToItems.get(ing.key)!.push(item.id);
+    const ings = itemToIngredient.get(item.id) ?? [];
+    for (const ing of ings) {
+      presentKeys.add(ing.key);
+      if (!keyToItems.has(ing.key)) keyToItems.set(ing.key, []);
+      keyToItems.get(ing.key)!.push(item.id);
+    }
   }
 
   const findings: AuditFinding[] = [];
@@ -111,12 +115,12 @@ function checkInteractions(
 /** 不足検出: 既存成分とのシナジー候補 */
 function checkSynergies(
   items: StackItem[],
-  itemToIngredient: Map<string, Ingredient | null>
+  itemToIngredient: Map<string, Ingredient[]>
 ): AuditFinding[] {
   const presentKeys = new Set<IngredientKey>();
   for (const item of items) {
-    const ing = itemToIngredient.get(item.id);
-    if (ing) presentKeys.add(ing.key);
+    const ings = itemToIngredient.get(item.id) ?? [];
+    for (const ing of ings) presentKeys.add(ing.key);
   }
 
   const findings: AuditFinding[] = [];
@@ -167,11 +171,13 @@ function checkTiming(items: StackItem[]): AuditFinding[] {
 /** 全体的なヒント(コンテキスト依存) */
 function generalTips(
   items: StackItem[],
-  itemToIngredient: Map<string, Ingredient | null>
+  itemToIngredient: Map<string, Ingredient[]>
 ): AuditFinding[] {
   const findings: AuditFinding[] = [];
-  // detect_unknown
-  const unmatched = items.filter((i) => !itemToIngredient.get(i.id));
+  // detect_unknown(全件で成分0個の場合)
+  const unmatched = items.filter(
+    (i) => (itemToIngredient.get(i.id) ?? []).length === 0
+  );
   if (unmatched.length > 0 && unmatched.length === items.length) {
     findings.push({
       id: 'tip_unmatched_all',
@@ -179,7 +185,7 @@ function generalTips(
       severity: 'info',
       title: '登録されたサプリの成分を判別できませんでした',
       description:
-        '商品名に成分名が含まれてると判別精度が上がります。例:「マグネシウム グリシネート」「ビタミンD3」のように、含まれる成分名も名前に入れてみて。'
+        '商品名に成分名が含まれてないと判別できません。フォームの「✦ 成分を AI で推測」ボタンで AI に成分を抽出させるか、商品名に成分名を併記してみて(例:「オキシカット (カフェイン Lカルニチン)」)。'
     });
   }
   return findings;

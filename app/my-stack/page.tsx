@@ -1,8 +1,9 @@
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
-import { addStackItem, deleteStackItem, toggleActiveStackItem } from './actions';
+import { deleteStackItem, toggleActiveStackItem } from './actions';
 import { auditStack, type AuditFinding } from '@/lib/audit/engine';
 import AiAnalysisPanel from './AiAnalysisPanel';
+import AddStackItemForm from './AddStackItemForm';
 import { getBillingStatus } from '@/lib/billing/usage';
 
 type StackItem = {
@@ -15,6 +16,7 @@ type StackItem = {
   source: string | null;
   is_active: boolean;
   added_at: string;
+  detected_ingredients: string | null;
 };
 
 const TIMING_LABELS: Record<string, string> = {
@@ -182,95 +184,7 @@ export default async function MyStackPage() {
           + 新しいサプリを追加
         </summary>
 
-        <form action={addStackItem} style={{ marginTop: 20 }}>
-          <FormField label="サプリ名" name="name" required placeholder="例: マグネシウム グリシネート" />
-          <FormField label="ブランド" name="brand" placeholder="例: NOW Foods(任意)" />
-          <FormField label="用量・1日の量" name="dosage" placeholder="例: 300mg / 1日1回" />
-
-          <div style={{ marginBottom: 16 }}>
-            <label
-              style={{
-                display: 'block',
-                fontSize: 12,
-                color: 'var(--text-sub)',
-                marginBottom: 8,
-                fontWeight: 600
-              }}
-            >
-              タイミング(複数選択可)
-            </label>
-            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-              {Object.entries(TIMING_LABELS).map(([key, label]) => (
-                <label
-                  key={key}
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: 6,
-                    padding: '6px 12px',
-                    border: '1px solid var(--border)',
-                    borderRadius: 100,
-                    fontSize: 12,
-                    cursor: 'pointer'
-                  }}
-                >
-                  <input
-                    type="checkbox"
-                    name="timing"
-                    value={key}
-                    style={{ margin: 0 }}
-                  />
-                  {label}
-                </label>
-              ))}
-            </div>
-          </div>
-
-          <div style={{ marginBottom: 18 }}>
-            <label
-              style={{
-                display: 'block',
-                fontSize: 12,
-                color: 'var(--text-sub)',
-                marginBottom: 6,
-                fontWeight: 600
-              }}
-            >
-              メモ
-            </label>
-            <textarea
-              name="notes"
-              placeholder="効果・気付き等、自由メモ"
-              rows={2}
-              style={{
-                width: '100%',
-                padding: '10px 12px',
-                border: '1px solid var(--border)',
-                borderRadius: 8,
-                fontSize: 14,
-                fontFamily: 'inherit',
-                resize: 'vertical'
-              }}
-            />
-          </div>
-
-          <button
-            type="submit"
-            style={{
-              background: 'var(--accent)',
-              color: 'white',
-              border: 'none',
-              padding: '11px 22px',
-              borderRadius: 10,
-              fontSize: 14,
-              fontWeight: 600,
-              cursor: 'pointer',
-              fontFamily: 'inherit'
-            }}
-          >
-            追加する
-          </button>
-        </form>
+        <AddStackItemForm />
       </details>
 
       {/* 一覧 */}

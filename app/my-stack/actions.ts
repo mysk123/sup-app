@@ -21,6 +21,8 @@ export async function addStackItem(formData: FormData) {
   const brand = (formData.get('brand') as string)?.trim() || null;
   const dosage = (formData.get('dosage') as string)?.trim() || null;
   const notes = (formData.get('notes') as string)?.trim() || null;
+  const detected_ingredients =
+    (formData.get('detected_ingredients') as string)?.trim() || null;
   const timing = formData.getAll('timing') as string[];
 
   await supabase.from('stack_items').insert({
@@ -29,6 +31,7 @@ export async function addStackItem(formData: FormData) {
     brand,
     dosage,
     notes,
+    detected_ingredients,
     timing: timing.length > 0 ? timing : null,
     source: 'manual'
   });
