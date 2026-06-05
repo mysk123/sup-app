@@ -1,56 +1,89 @@
 /**
- * Sup. App — Home (landing for the management app)
- *
- * 既存の sup-app.org(診断/入り口)とは別物の、
- * 「飲んでるサプリを管理する」アプリのトップページ。
- *
- * Phase 2 では:
- *  - ログインでクラウド同期される My Stack
- *  - 既存の Saved List(localStorage)からの引き継ぎ
- *  - Stack 監査 / リマインダー(Phase 3, 4)
+ * Sup. App — Home
+ * ログイン状態を判定して、CTAを出し分ける
  */
+import { createClient } from '@/lib/supabase/server';
 
-export default function Home() {
+export default async function Home() {
+  const supabase = createClient();
+  const {
+    data: { user }
+  } = await supabase.auth.getUser();
+
   return (
     <div className="container">
-      <div
+      <header
         style={{
           display: 'flex',
-          alignItems: 'baseline',
-          gap: 12,
+          alignItems: 'center',
+          justifyContent: 'space-between',
           marginBottom: 48
         }}
       >
-        <span
-          style={{
-            fontWeight: 700,
-            fontSize: 22,
-            letterSpacing: '-0.02em'
-          }}
-        >
-          Sup<span style={{ color: 'var(--accent)' }}>.</span>
+        <a href="/" style={{ textDecoration: 'none', color: 'inherit' }}>
           <span
             style={{
-              marginLeft: 6,
-              fontSize: 12,
-              color: 'var(--text-sub)',
-              fontWeight: 600,
-              letterSpacing: '0.04em'
+              fontWeight: 700,
+              fontSize: 22,
+              letterSpacing: '-0.02em'
             }}
           >
-            App
+            Sup<span style={{ color: 'var(--accent)' }}>.</span>
+            <span
+              style={{
+                marginLeft: 6,
+                fontSize: 12,
+                color: 'var(--text-sub)',
+                fontWeight: 600,
+                letterSpacing: '0.04em'
+              }}
+            >
+              App
+            </span>
           </span>
-        </span>
-        <span
-          style={{
-            fontSize: 12,
-            color: 'var(--text-sub)',
-            letterSpacing: '0.02em'
-          }}
-        >
-          サプリメント管理アプリ
-        </span>
-      </div>
+        </a>
+        {user ? (
+          <div
+            style={{ display: 'flex', alignItems: 'center', gap: 14 }}
+          >
+            <span style={{ fontSize: 12, color: 'var(--text-sub)' }}>
+              {user.email}
+            </span>
+            <form action="/auth/logout" method="POST">
+              <button
+                type="submit"
+                style={{
+                  fontSize: 12,
+                  background: 'transparent',
+                  color: 'var(--text-sub)',
+                  border: '1px solid var(--border)',
+                  padding: '6px 12px',
+                  borderRadius: 8,
+                  cursor: 'pointer',
+                  fontFamily: 'inherit'
+                }}
+              >
+                ログアウト
+              </button>
+            </form>
+          </div>
+        ) : (
+          <a
+            href="/login"
+            style={{
+              fontSize: 12,
+              background: 'var(--accent)',
+              color: 'white',
+              textDecoration: 'none',
+              padding: '7px 14px',
+              borderRadius: 8,
+              fontWeight: 600
+            }}
+          >
+            ログイン
+          </a>
+        )}
+      </header>
 
       <div style={{ marginBottom: 88 }}>
         <div
@@ -63,7 +96,7 @@ export default function Home() {
             fontWeight: 600
           }}
         >
-          BUILDING IN PUBLIC / PHASE 2
+          BUILDING IN PUBLIC / PHASE 2.3
         </div>
         <h1
           style={{
@@ -83,12 +116,51 @@ export default function Home() {
             color: 'var(--text-sub)',
             fontSize: 16,
             lineHeight: 1.85,
-            maxWidth: 540
+            maxWidth: 540,
+            marginBottom: 28
           }}
         >
           今飲んでいるサプリの記録 / 重複・干渉チェック / 服用タイミングの
           リマインドまで一気通貫で。Sup. の診断結果も、ここに集約。
         </p>
+
+        {user ? (
+          <a
+            href="/my-stack"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 8,
+              background: 'var(--accent)',
+              color: 'white',
+              textDecoration: 'none',
+              padding: '14px 26px',
+              borderRadius: 12,
+              fontSize: 15,
+              fontWeight: 700
+            }}
+          >
+            My Stack を開く →
+          </a>
+        ) : (
+          <a
+            href="/login"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 8,
+              background: 'var(--accent)',
+              color: 'white',
+              textDecoration: 'none',
+              padding: '14px 26px',
+              borderRadius: 12,
+              fontSize: 15,
+              fontWeight: 700
+            }}
+          >
+            ログインして My Stack を作る →
+          </a>
+        )}
       </div>
 
       <div
@@ -132,13 +204,14 @@ export default function Home() {
             display: 'inline-flex',
             alignItems: 'center',
             gap: 8,
-            background: 'var(--accent)',
-            color: 'white',
+            background: 'transparent',
+            color: 'var(--accent)',
             textDecoration: 'none',
-            padding: '12px 22px',
-            borderRadius: 12,
-            fontSize: 14,
-            fontWeight: 600
+            padding: '10px 18px',
+            borderRadius: 10,
+            fontSize: 13,
+            fontWeight: 600,
+            border: '1px solid var(--accent)'
           }}
         >
           sup-app.org で診断する →
@@ -168,15 +241,15 @@ export default function Home() {
       >
         <li>
           <strong style={{ color: 'var(--text-main)' }}>Phase 2.1</strong>{' '}
-          Next.js skeleton ← 今ここ
+          Next.js skeleton ✓
         </li>
         <li>
           <strong style={{ color: 'var(--text-main)' }}>Phase 2.2</strong>{' '}
-          Supabase + Google 認証
+          Supabase + Google 認証 ✓
         </li>
         <li>
           <strong style={{ color: 'var(--text-main)' }}>Phase 2.3</strong> My
-          Stack DB スキーマ + 永続化(端末跨ぎ同期)
+          Stack DB スキーマ + 永続化 ← 今ここ
         </li>
         <li>
           <strong style={{ color: 'var(--text-main)' }}>Phase 3</strong> Stack
