@@ -61,7 +61,7 @@ export default function AiAnalysisPanel() {
           fontWeight: 700
         }}
       >
-        AI ANALYSIS — Claude による包括分析
+        AI ANALYSIS — スタック包括分析
       </div>
 
       {!result && !loading && (
@@ -81,7 +81,7 @@ export default function AiAnalysisPanel() {
               marginBottom: 14
             }}
           >
-            ルールベースで拾えない「コンテキスト依存の改善案」を、Claude
+            ルールベースで拾えない「コンテキスト依存の改善案」を、AI
             に分析させます。スタック全体の方向性、足りない観点、シナジー候補を
             個別アドバイスとして返します。
           </div>
@@ -131,7 +131,7 @@ export default function AiAnalysisPanel() {
                 marginRight: 8
               }}
             />
-            Claude が分析中…
+            AI が分析中…
           </div>
           <div style={{ fontSize: 12 }}>
             (通常 10〜30 秒。スタックが多いと長くなる)
