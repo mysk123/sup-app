@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import { addStackItem, deleteStackItem, toggleActiveStackItem } from './actions';
 import { auditStack, type AuditFinding } from '@/lib/audit/engine';
+import AiAnalysisPanel from './AiAnalysisPanel';
 
 type StackItem = {
   id: string;
@@ -142,8 +143,13 @@ export default async function MyStackPage() {
         </p>
       </div>
 
-      {/* 監査結果 */}
+      {/* 監査結果(ルールベース) */}
       {findings.length > 0 && <AuditSection findings={findings} />}
+
+      {/* AI 包括分析 */}
+      {stackItems.filter((i) => i.is_active).length > 0 && (
+        <AiAnalysisPanel />
+      )}
 
       {/* 追加フォーム */}
       <details
