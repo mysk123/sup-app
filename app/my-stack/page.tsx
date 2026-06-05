@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import { addStackItem, deleteStackItem, toggleActiveStackItem } from './actions';
+import { auditStack, type AuditFinding } from '@/lib/audit/engine';
 
 type StackItem = {
   id: string;
@@ -38,6 +39,7 @@ export default async function MyStackPage() {
     .order('added_at', { ascending: false });
 
   const stackItems: StackItem[] = items ?? [];
+  const findings = auditStack(stackItems);
 
   return (
     <div className="container" style={{ maxWidth: 720 }}>
@@ -139,6 +141,9 @@ export default async function MyStackPage() {
           で活用していく。
         </p>
       </div>
+
+      {/* 監査結果 */}
+      {findings.length > 0 && <AuditSection findings={findings} />}
 
       {/* 追加フォーム */}
       <details
@@ -433,6 +438,137 @@ export default async function MyStackPage() {
             )}
           </div>
         ))}
+      </div>
+    </div>
+  );
+}
+
+function AuditSection({ findings }: { findings: AuditFinding[] }) {
+  const dangerOrWarning = findings.filter(
+    (f) => f.severity === 'danger' || f.severity === 'warning'
+  );
+  const info = findings.filter((f) => f.severity === 'info');
+
+  return (
+    <div style={{ marginBottom: 28 }}>
+      <div
+        style={{
+          fontSize: 11,
+          fontFamily: 'Inter, sans-serif',
+          letterSpacing: '0.15em',
+          color: 'var(--accent)',
+          marginBottom: 14,
+          fontWeight: 700
+        }}
+      >
+        AUDIT — {findings.length}件の気づき
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        {dangerOrWarning.map((f) => (
+          <FindingCard key={f.id} finding={f} />
+        ))}
+        {info.length > 0 && (
+          <details
+            style={{
+              background: 'var(--card-bg)',
+              border: '1px solid var(--border)',
+              borderRadius: 12,
+              padding: '16px 20px'
+            }}
+          >
+            <summary
+              style={{
+                fontSize: 13,
+                fontWeight: 600,
+                cursor: 'pointer',
+                color: 'var(--text-sub)',
+                userSelect: 'none'
+              }}
+            >
+              ヒント・改善案 ({info.length}件)
+            </summary>
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 10,
+                marginTop: 14
+              }}
+            >
+              {info.map((f) => (
+                <FindingCard key={f.id} finding={f} />
+              ))}
+            </div>
+          </details>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function FindingCard({ finding }: { finding: AuditFinding }) {
+  const styleByVariant = {
+    danger: {
+      bg: '#fef2f2',
+      border: '#fecaca',
+      label: 'DANGER',
+      labelColor: '#991b1b'
+    },
+    warning: {
+      bg: '#fff8eb',
+      border: '#fcdca2',
+      label: 'WARNING',
+      labelColor: '#8a5a06'
+    },
+    info: {
+      bg: 'var(--accent-light)',
+      border: 'rgba(15, 91, 62, 0.18)',
+      label: 'TIP',
+      labelColor: 'var(--accent-dark)'
+    }
+  };
+  const s = styleByVariant[finding.severity];
+
+  return (
+    <div
+      style={{
+        background: s.bg,
+        border: `1px solid ${s.border}`,
+        borderRadius: 12,
+        padding: '14px 18px'
+      }}
+    >
+      <div
+        style={{
+          fontSize: 10,
+          fontFamily: 'Inter, sans-serif',
+          letterSpacing: '0.16em',
+          fontWeight: 700,
+          color: s.labelColor,
+          marginBottom: 6
+        }}
+      >
+        {s.label}
+      </div>
+      <div
+        style={{
+          fontSize: 14,
+          fontWeight: 700,
+          color: 'var(--text-main)',
+          marginBottom: 6,
+          lineHeight: 1.45
+        }}
+      >
+        {finding.title}
+      </div>
+      <div
+        style={{
+          fontSize: 13,
+          color: 'var(--text-sub)',
+          lineHeight: 1.75
+        }}
+      >
+        {finding.description}
       </div>
     </div>
   );
