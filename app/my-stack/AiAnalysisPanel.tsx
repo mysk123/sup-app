@@ -158,22 +158,44 @@ export default function AiAnalysisPanel({
             に分析させます。スタック全体の方向性、足りない観点、シナジー候補を
             個別アドバイスとして返します。
           </div>
-          <button
-            onClick={runAnalysis}
-            style={{
-              background: 'var(--accent)',
-              color: 'white',
-              border: 'none',
-              padding: '11px 22px',
-              borderRadius: 10,
-              fontSize: 14,
-              fontWeight: 600,
-              cursor: 'pointer',
-              fontFamily: 'inherit'
-            }}
-          >
-            AI 包括分析を生成
-          </button>
+          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
+            <button
+              onClick={runAnalysis}
+              style={{
+                background: 'var(--accent)',
+                color: 'white',
+                border: 'none',
+                padding: '11px 22px',
+                borderRadius: 10,
+                fontSize: 14,
+                fontWeight: 600,
+                cursor: 'pointer',
+                fontFamily: 'inherit'
+              }}
+            >
+              AI 包括分析を生成
+            </button>
+            {!isPro && (
+              <button
+                onClick={upgradeToPro}
+                disabled={upgrading}
+                style={{
+                  background: 'transparent',
+                  color: 'var(--accent)',
+                  border: '1px solid var(--accent)',
+                  padding: '10px 18px',
+                  borderRadius: 10,
+                  fontSize: 13,
+                  fontWeight: 600,
+                  cursor: upgrading ? 'wait' : 'pointer',
+                  fontFamily: 'inherit',
+                  opacity: upgrading ? 0.7 : 1
+                }}
+              >
+                {upgrading ? '移動中…' : 'Pro で無制限にする (¥980/月)'}
+              </button>
+            )}
+          </div>
         </div>
       )}
 
