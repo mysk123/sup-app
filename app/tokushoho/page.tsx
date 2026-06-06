@@ -20,24 +20,18 @@ export default function TokushohoPage() {
       lastUpdated="2026年6月7日"
     >
       <Row label="販売事業者">
-        <Placeholder>
-          (本番化前に法人名 or 個人事業主氏名を記載)
-        </Placeholder>
+        矢崎 誠人(屋号: Place to talk)
       </Row>
 
-      <Row label="運営責任者">
-        <Placeholder>(本番化前に氏名を記載)</Placeholder>
-      </Row>
+      <Row label="運営責任者">矢崎 誠人</Row>
 
       <Row label="所在地">
-        <Placeholder>
-          (本番化前に住所を記載 ・ 個人の場合は請求があれば遅滞なく開示する旨を記載可)
-        </Placeholder>
+        ご請求があれば遅滞なく開示いたします。下記のお問い合わせ先までご連絡ください。
       </Row>
 
       <Row label="連絡先">
         <Placeholder>
-          (メールアドレス / 電話番号 ・ 電話は請求があれば開示する旨でも可)
+          (Gmail 開設後に反映 / 電話番号は請求があれば開示)
         </Placeholder>
       </Row>
 
