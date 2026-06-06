@@ -61,25 +61,21 @@ export default function PrivacyPage() {
       </UL>
 
       <H2>4. 利用するサービス</H2>
-      <P>本サービスは以下の外部サービスを利用しています。</P>
+      <P>本サービスは、サービス提供のため以下の外部サービスを利用しています。</P>
       <UL>
         <li>
-          <strong>Supabase</strong>: データベース・認証
+          <strong>Google サインイン</strong>: ユーザー認証
         </li>
         <li>
-          <strong>Vercel</strong>: ホスティング・アクセスログ
-        </li>
-        <li>
-          <strong>Google Sign-In</strong>: 認証
-        </li>
-        <li>
-          <strong>Stripe</strong>: 決済処理
-        </li>
-        <li>
-          <strong>Anthropic Claude</strong>: AI 分析
-          (サプリメントの組み合わせから改善案を生成する目的でのみ利用、個人を特定する情報は送信されません)
+          <strong>Stripe</strong>: クレジットカード決済の処理
         </li>
       </UL>
+      <P>
+        その他、データベース、ホスティング、AI 解析等のために業務委託先のクラウドサービス事業者を利用しています。これらの委託先には個人情報保護に関する適切な契約を締結しています。委託先名の開示をご希望の場合は、お問い合わせ先までご連絡ください。
+      </P>
+      <P>
+        なお、AI 解析にあたっては、ユーザーが登録したサプリメントに関する情報を送信しますが、メールアドレス・氏名等の個人を特定する情報は送信していません。
+      </P>
 
       <H2>5. Cookie の使用</H2>
       <P>
