@@ -3,37 +3,43 @@
 /**
  * /onboard のインタラクティブ部分
  * - 各 target と各サプリにチェックボックス
- * - 「選んだ○件を追加」ボタンに動的件数を表示
+ * - 重複してる既存サプリは「登録済み」マーク + デフォルト未選択
+ * - 件数は target / サプリ で別表示("3件選択"の曖昧さを排除)
  */
 import { useState, useTransition } from 'react';
 import { acceptOnboard } from './actions';
 import { TARGET_LABELS, type Target } from '@/lib/audit/score';
 
-type Item = { name: string; dosage?: string };
+type ItemWithDup = { name: string; dosage?: string; isDuplicate: boolean };
 
 export default function OnboardClient({
   initialTargets,
+  existingTargets,
   initialItems
 }: {
   initialTargets: Target[];
-  initialItems: Item[];
+  existingTargets: Target[];
+  initialItems: ItemWithDup[];
 }) {
-  // デフォルト全選択(ユーザーは「外す」操作だけで済む)
+  // target デフォルト: 既存にない target だけ ON
   const [targetChecks, setTargetChecks] = useState<Record<Target, boolean>>(
     () =>
       initialTargets.reduce(
-        (acc, t) => ({ ...acc, [t]: true }),
+        (acc, t) => ({
+          ...acc,
+          [t]: !existingTargets.includes(t)
+        }),
         {} as Record<Target, boolean>
       )
   );
+  // item デフォルト: 重複してないものだけ ON
   const [itemChecks, setItemChecks] = useState<boolean[]>(() =>
-    initialItems.map(() => true)
+    initialItems.map((i) => !i.isDuplicate)
   );
   const [pending, startTransition] = useTransition();
 
   const selectedTargets = initialTargets.filter((t) => targetChecks[t]);
   const selectedItems = initialItems.filter((_, i) => itemChecks[i]);
-  const total = selectedTargets.length + selectedItems.length;
 
   function toggleTarget(t: Target) {
     setTargetChecks((prev) => ({ ...prev, [t]: !prev[t] }));
@@ -60,6 +66,14 @@ export default function OnboardClient({
     });
   }
 
+  const submitLabel = buildSubmitLabel({
+    targetCount: selectedTargets.length,
+    itemCount: selectedItems.length,
+    pending
+  });
+  const nothingSelected =
+    selectedTargets.length === 0 && selectedItems.length === 0;
+
   return (
     <>
       {/* TARGETS */}
@@ -75,11 +89,12 @@ export default function OnboardClient({
               fontWeight: 700
             }}
           >
-            目的(TARGET)
+            目的(TARGET) — {selectedTargets.length} / {initialTargets.length} 件
           </div>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             {initialTargets.map((t) => {
               const selected = targetChecks[t];
+              const alreadyHave = existingTargets.includes(t);
               return (
                 <button
                   key={t}
@@ -102,6 +117,18 @@ export default function OnboardClient({
                 >
                   {selected ? '✓ ' : ''}
                   {TARGET_LABELS[t]}
+                  {alreadyHave && (
+                    <span
+                      style={{
+                        marginLeft: 6,
+                        fontSize: 10,
+                        opacity: 0.75,
+                        fontWeight: 600
+                      }}
+                    >
+                      (設定済み)
+                    </span>
+                  )}
                 </button>
               );
             })}
@@ -131,7 +158,7 @@ export default function OnboardClient({
                 fontWeight: 700
               }}
             >
-              推奨サプリ({selectedItems.length} / {initialItems.length} 選択中)
+              サプリ — {selectedItems.length} / {initialItems.length} 件
             </div>
             <div style={{ display: 'flex', gap: 8 }}>
               <button
@@ -192,7 +219,8 @@ export default function OnboardClient({
                     cursor: 'pointer',
                     fontFamily: 'inherit',
                     textAlign: 'left',
-                    transition: 'all 0.15s ease'
+                    transition: 'all 0.15s ease',
+                    opacity: item.isDuplicate && !selected ? 0.6 : 1
                   }}
                 >
                   <div
@@ -217,13 +245,38 @@ export default function OnboardClient({
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div
                       style={{
-                        fontSize: 14,
-                        fontWeight: 700,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 8,
                         marginBottom: 2,
-                        color: 'var(--text-main)'
+                        flexWrap: 'wrap'
                       }}
                     >
-                      {item.name}
+                      <div
+                        style={{
+                          fontSize: 14,
+                          fontWeight: 700,
+                          color: 'var(--text-main)'
+                        }}
+                      >
+                        {item.name}
+                      </div>
+                      {item.isDuplicate && (
+                        <span
+                          style={{
+                            fontSize: 10,
+                            fontFamily: 'Inter, sans-serif',
+                            letterSpacing: '0.12em',
+                            fontWeight: 700,
+                            padding: '2px 7px',
+                            background: '#fff8eb',
+                            color: '#8a5a06',
+                            borderRadius: 100
+                          }}
+                        >
+                          登録済み
+                        </span>
+                      )}
                     </div>
                     {item.dosage && (
                       <div
@@ -249,25 +302,25 @@ export default function OnboardClient({
         <button
           type="button"
           onClick={handleSubmit}
-          disabled={total === 0 || pending}
+          disabled={nothingSelected || pending}
           style={{
-            background: total === 0 ? 'var(--border)' : 'var(--accent)',
-            color: total === 0 ? 'var(--text-sub)' : 'white',
+            background: nothingSelected ? 'var(--border)' : 'var(--accent)',
+            color: nothingSelected ? 'var(--text-sub)' : 'white',
             border: 'none',
             padding: '13px 24px',
             borderRadius: 12,
             fontSize: 14,
             fontWeight: 700,
-            cursor: total === 0 ? 'not-allowed' : pending ? 'wait' : 'pointer',
+            cursor: nothingSelected
+              ? 'not-allowed'
+              : pending
+                ? 'wait'
+                : 'pointer',
             fontFamily: 'inherit',
             opacity: pending ? 0.7 : 1
           }}
         >
-          {pending
-            ? '追加中…'
-            : total === 0
-              ? '何も選ばれていません'
-              : `選んだ ${total} 件を追加 →`}
+          {submitLabel}
         </button>
         <a
           href="/my-stack"
@@ -289,4 +342,21 @@ export default function OnboardClient({
       </div>
     </>
   );
+}
+
+function buildSubmitLabel({
+  targetCount,
+  itemCount,
+  pending
+}: {
+  targetCount: number;
+  itemCount: number;
+  pending: boolean;
+}): string {
+  if (pending) return '追加中…';
+  if (targetCount === 0 && itemCount === 0) return '何も選ばれていません';
+  const parts: string[] = [];
+  if (targetCount > 0) parts.push(`目的 ${targetCount}件`);
+  if (itemCount > 0) parts.push(`サプリ ${itemCount}件`);
+  return `${parts.join(' + ')} を追加 →`;
 }

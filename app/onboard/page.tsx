@@ -3,11 +3,14 @@
  *
  * sup-app.org 側の診断結果から「My Stack に送る」ボタンで遷移してくる。
  * プレビュー画面で「どれを追加するか」を選んで承認できる。
+ *
+ * 既存スタックと重複してるサプリは「登録済み」マークしてデフォルト未選択。
  */
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import OnboardClient from './OnboardClient';
 import { type Target } from '@/lib/audit/score';
+import { isDuplicateName } from '@/lib/onboard-utils';
 
 type Item = { name: string; dosage?: string };
 
@@ -70,6 +73,26 @@ export default async function OnboardPage({
     redirect('/my-stack');
   }
 
+  // 既存スタックを取得して、重複してる items にフラグを立てる
+  const { data: existingItems } = await supabase
+    .from('stack_items')
+    .select('name')
+    .eq('user_id', user.id);
+  const existingNames = (existingItems ?? []).map((i) => i.name);
+
+  const itemsWithDup = items.map((item) => ({
+    ...item,
+    isDuplicate: isDuplicateName(item.name, existingNames)
+  }));
+
+  // 既存 profile.targets を取得して、既に持ってる target にフラグ
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('targets')
+    .eq('user_id', user.id)
+    .maybeSingle();
+  const existingTargets: Target[] = (profile?.targets ?? []) as Target[];
+
   return (
     <div className="container" style={{ maxWidth: 560, padding: '40px 20px' }}>
       <header style={{ marginBottom: 32 }}>
@@ -125,9 +148,14 @@ export default async function OnboardPage({
       >
         sup-app.org の診断で出た推奨。最初の一本だけ試したい場合や、
         すでに飲んでるものを除く時は、チェックを外せば対象から外れます。
+        重複しているサプリは自動で除外候補にしてます。
       </p>
 
-      <OnboardClient initialTargets={targets} initialItems={items} />
+      <OnboardClient
+        initialTargets={targets}
+        existingTargets={existingTargets}
+        initialItems={itemsWithDup}
+      />
 
       <div
         style={{
@@ -142,7 +170,7 @@ export default async function OnboardPage({
         }}
       >
         ※ 追加後、商品名・ブランド・タイミング等の詳細は My Stack
-        で編集できる。重複した場合は手動で整理してください。
+        で編集できる。
       </div>
     </div>
   );

@@ -3,10 +3,12 @@
 /**
  * /onboard 用の Server Action
  * - sup-app.org 側の診断結果から渡された target / items を一括登録
+ * - 既存スタックと重複する items は server 側でも除外(防御層)
  */
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { redirect } from 'next/navigation';
+import { isDuplicateName } from '@/lib/onboard-utils';
 
 export type OnboardItem = {
   name: string;
@@ -56,10 +58,21 @@ export async function acceptOnboard(formData: FormData) {
     .update({ targets: merged })
     .eq('user_id', user.id);
 
-  // 2. stack_items に bulk insert(source: 'diagnosis')
-  if (items.length > 0) {
+  // 2. 既存スタックを取得して重複を server 側でも除外
+  const { data: existing } = await supabase
+    .from('stack_items')
+    .select('name')
+    .eq('user_id', user.id);
+  const existingNames = (existing ?? []).map((i) => i.name);
+
+  const dedupedItems = items.filter(
+    (item) => !isDuplicateName(item.name, existingNames)
+  );
+
+  // 3. stack_items に bulk insert(source: 'diagnosis')
+  if (dedupedItems.length > 0) {
     await supabase.from('stack_items').insert(
-      items.map((item) => ({
+      dedupedItems.map((item) => ({
         user_id: user.id,
         name: item.name.trim(),
         dosage: item.dosage?.trim() || null,
