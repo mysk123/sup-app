@@ -31,6 +31,59 @@ export const metadata: Metadata = {
   }
 };
 
+function Footer() {
+  return (
+    <footer
+      style={{
+        maxWidth: 720,
+        margin: '60px auto 32px',
+        padding: '24px 20px 0',
+        borderTop: '1px solid var(--border)',
+        fontSize: 12,
+        color: 'var(--text-sub)',
+        lineHeight: 1.8
+      }}
+    >
+      <div
+        style={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          gap: 16,
+          marginBottom: 10
+        }}
+      >
+        <a
+          href="/terms"
+          style={{ color: 'var(--text-sub)', textDecoration: 'none' }}
+        >
+          利用規約
+        </a>
+        <a
+          href="/privacy"
+          style={{ color: 'var(--text-sub)', textDecoration: 'none' }}
+        >
+          プライバシーポリシー
+        </a>
+        <a
+          href="/tokushoho"
+          style={{ color: 'var(--text-sub)', textDecoration: 'none' }}
+        >
+          特定商取引法に基づく表示
+        </a>
+        <a
+          href="https://sup-app.org/"
+          style={{ color: 'var(--text-sub)', textDecoration: 'none' }}
+        >
+          診断する (sup-app.org)
+        </a>
+      </div>
+      <div style={{ fontSize: 11, opacity: 0.7 }}>
+        © 2026 Sup. App — サプリメントの組み合わせを、続けやすく。
+      </div>
+    </footer>
+  );
+}
+
 export default function RootLayout({
   children
 }: {
@@ -50,7 +103,10 @@ export default function RootLayout({
           rel="stylesheet"
         />
       </head>
-      <body>{children}</body>
+      <body>
+        {children}
+        <Footer />
+      </body>
     </html>
   );
 }
