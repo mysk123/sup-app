@@ -30,9 +30,18 @@ export default function TokushohoPage() {
       </Row>
 
       <Row label="連絡先">
-        <Placeholder>
-          (Gmail 開設後に反映 / 電話番号は請求があれば開示)
-        </Placeholder>
+        <div>
+          メールアドレス:{' '}
+          <a
+            href="mailto:supapp.support@gmail.com"
+            style={{ color: 'var(--accent)' }}
+          >
+            supapp.support@gmail.com
+          </a>
+        </div>
+        <div style={{ marginTop: 6, fontSize: 13, color: 'var(--text-sub)' }}>
+          電話番号は、ご請求があれば遅滞なく開示いたします。
+        </div>
       </Row>
 
       <Row label="販売価格">
