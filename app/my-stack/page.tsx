@@ -1,9 +1,12 @@
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import { auditStack, type AuditFinding } from '@/lib/audit/engine';
+import { computeScore, type Target } from '@/lib/audit/score';
 import AiAnalysisPanel from './AiAnalysisPanel';
 import AddStackItemForm from './AddStackItemForm';
 import StackItemsList, { type StackItem } from './StackItemsList';
+import TargetSelector from './TargetSelector';
+import ScorePanel from './ScorePanel';
 import { getBillingStatus } from '@/lib/billing/usage';
 
 export default async function MyStackPage() {
@@ -24,6 +27,25 @@ export default async function MyStackPage() {
   const stackItems: StackItem[] = items ?? [];
   const findings = auditStack(stackItems);
   const billing = await getBillingStatus();
+
+  // profiles から targets を取得
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('targets')
+    .eq('user_id', user.id)
+    .maybeSingle();
+  const targets: Target[] = (profile?.targets ?? []) as Target[];
+
+  // 最古の added_at を継続性スコア用に
+  const oldest =
+    stackItems.length > 0
+      ? stackItems.reduce((min, i) =>
+          i.added_at < min.added_at ? i : min
+        ).added_at
+      : null;
+
+  // スコア計算
+  const score = computeScore(stackItems, targets, oldest);
 
   return (
     <div className="container" style={{ maxWidth: 720 }}>
@@ -125,6 +147,14 @@ export default async function MyStackPage() {
           で活用していく。
         </p>
       </div>
+
+      {/* 目的(target)選択 */}
+      <TargetSelector initialTargets={targets} />
+
+      {/* Optimization Score(常時表示、空スタックでもゼロ点で見える) */}
+      {billing && (
+        <ScorePanel score={score} plan={billing.plan} />
+      )}
 
       {/* 監査結果(ルールベース) */}
       {findings.length > 0 && <AuditSection findings={findings} />}
