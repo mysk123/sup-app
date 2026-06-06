@@ -1,0 +1,250 @@
+'use client';
+
+/**
+ * スタック一覧 (Client Component)
+ * useOptimistic でボタン押下時に即座に UI が反応するようにする
+ */
+import { useOptimistic, useTransition } from 'react';
+import { deleteStackItem, toggleActiveStackItem } from './actions';
+
+const TIMING_LABELS: Record<string, string> = {
+  morning: '朝',
+  lunch: '昼',
+  evening: '夕',
+  bedtime: '就寝前',
+  as_needed: '頓服'
+};
+
+export type StackItem = {
+  id: string;
+  name: string;
+  brand: string | null;
+  dosage: string | null;
+  timing: string[] | null;
+  notes: string | null;
+  source: string | null;
+  is_active: boolean;
+  added_at: string;
+  detected_ingredients: string | null;
+};
+
+type OptimisticAction =
+  | { type: 'delete'; id: string }
+  | { type: 'toggle'; id: string };
+
+export default function StackItemsList({ items }: { items: StackItem[] }) {
+  const [optimisticItems, applyOptimistic] = useOptimistic<
+    StackItem[],
+    OptimisticAction
+  >(items, (current, action) => {
+    switch (action.type) {
+      case 'delete':
+        return current.filter((i) => i.id !== action.id);
+      case 'toggle':
+        return current.map((i) =>
+          i.id === action.id ? { ...i, is_active: !i.is_active } : i
+        );
+    }
+  });
+
+  const [, startTransition] = useTransition();
+
+  function handleDelete(id: string) {
+    startTransition(async () => {
+      applyOptimistic({ type: 'delete', id });
+      const fd = new FormData();
+      fd.set('id', id);
+      await deleteStackItem(fd);
+    });
+  }
+
+  function handleToggle(id: string, currentActive: boolean) {
+    startTransition(async () => {
+      applyOptimistic({ type: 'toggle', id });
+      const fd = new FormData();
+      fd.set('id', id);
+      fd.set('is_active', String(currentActive));
+      await toggleActiveStackItem(fd);
+    });
+  }
+
+  if (optimisticItems.length === 0) {
+    return (
+      <div
+        style={{
+          padding: '36px 22px',
+          background: 'var(--card-bg)',
+          border: '1px dashed var(--border)',
+          borderRadius: 14,
+          textAlign: 'center',
+          color: 'var(--text-sub)',
+          fontSize: 14,
+          lineHeight: 1.75
+        }}
+      >
+        まだ登録されたサプリはありません。
+        <br />
+        上の「+ 新しいサプリを追加」から記録してみて。
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+      {optimisticItems.map((item) => (
+        <div
+          key={item.id}
+          style={{
+            padding: '18px 22px',
+            background: 'var(--card-bg)',
+            border: '1px solid var(--border)',
+            borderRadius: 12,
+            opacity: item.is_active ? 1 : 0.55,
+            transition: 'opacity 0.15s ease'
+          }}
+        >
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              gap: 12,
+              marginBottom: 6
+            }}
+          >
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div
+                style={{
+                  fontSize: 16,
+                  fontWeight: 700,
+                  marginBottom: 2,
+                  lineHeight: 1.4
+                }}
+              >
+                {item.name}
+              </div>
+              {item.brand && (
+                <div
+                  style={{
+                    fontSize: 12,
+                    color: 'var(--text-sub)',
+                    marginBottom: 4
+                  }}
+                >
+                  {item.brand}
+                </div>
+              )}
+            </div>
+            <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+              <button
+                type="button"
+                onClick={() => handleToggle(item.id, item.is_active)}
+                title={item.is_active ? '休止' : '再開'}
+                style={{
+                  background: 'transparent',
+                  border: '1px solid var(--border)',
+                  padding: '5px 10px',
+                  borderRadius: 6,
+                  fontSize: 11,
+                  cursor: 'pointer',
+                  color: 'var(--text-sub)',
+                  fontFamily: 'inherit'
+                }}
+              >
+                {item.is_active ? '休止' : '再開'}
+              </button>
+              <button
+                type="button"
+                onClick={() => handleDelete(item.id)}
+                title="削除"
+                style={{
+                  background: 'transparent',
+                  border: '1px solid var(--border)',
+                  padding: '5px 10px',
+                  borderRadius: 6,
+                  fontSize: 11,
+                  cursor: 'pointer',
+                  color: 'var(--text-sub)',
+                  fontFamily: 'inherit'
+                }}
+              >
+                ×
+              </button>
+            </div>
+          </div>
+
+          {item.dosage && (
+            <div
+              style={{
+                fontSize: 12,
+                fontFamily:
+                  'ui-monospace, "SF Mono", "JetBrains Mono", monospace',
+                color: 'var(--accent)',
+                marginBottom: 6
+              }}
+            >
+              {item.dosage}
+            </div>
+          )}
+
+          {item.timing && item.timing.length > 0 && (
+            <div
+              style={{
+                display: 'flex',
+                gap: 6,
+                flexWrap: 'wrap',
+                marginBottom: 8
+              }}
+            >
+              {item.timing.map((t) => (
+                <span
+                  key={t}
+                  style={{
+                    fontSize: 11,
+                    padding: '3px 9px',
+                    background: 'var(--accent-light)',
+                    color: 'var(--accent-dark)',
+                    borderRadius: 100,
+                    fontWeight: 600
+                  }}
+                >
+                  {TIMING_LABELS[t] ?? t}
+                </span>
+              ))}
+            </div>
+          )}
+
+          {/* AI 推測済み成分があれば表示 */}
+          {item.detected_ingredients && (
+            <div
+              style={{
+                fontSize: 11,
+                color: 'var(--text-sub)',
+                marginTop: 4,
+                marginBottom: 4,
+                lineHeight: 1.6
+              }}
+            >
+              <span style={{ fontWeight: 700, color: 'var(--accent)' }}>
+                成分:
+              </span>{' '}
+              {item.detected_ingredients}
+            </div>
+          )}
+
+          {item.notes && (
+            <div
+              style={{
+                fontSize: 13,
+                color: 'var(--text-sub)',
+                lineHeight: 1.65,
+                marginTop: 6
+              }}
+            >
+              {item.notes}
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}

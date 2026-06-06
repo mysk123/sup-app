@@ -6,6 +6,7 @@
  * - 「成分を AI で推測」ボタンで AI 抽出 → hidden input に保存して submit
  */
 import { useState } from 'react';
+import { useFormStatus } from 'react-dom';
 import { addStackItem } from './actions';
 
 const TIMING_LABELS: Record<string, string> = {
@@ -307,23 +308,32 @@ export default function AddStackItemForm() {
         />
       </div>
 
-      <button
-        type="submit"
-        style={{
-          background: 'var(--accent)',
-          color: 'white',
-          border: 'none',
-          padding: '11px 22px',
-          borderRadius: 10,
-          fontSize: 14,
-          fontWeight: 600,
-          cursor: 'pointer',
-          fontFamily: 'inherit'
-        }}
-      >
-        追加する
-      </button>
+      <SubmitButton />
     </form>
+  );
+}
+
+function SubmitButton() {
+  const { pending } = useFormStatus();
+  return (
+    <button
+      type="submit"
+      disabled={pending}
+      style={{
+        background: 'var(--accent)',
+        color: 'white',
+        border: 'none',
+        padding: '11px 22px',
+        borderRadius: 10,
+        fontSize: 14,
+        fontWeight: 600,
+        cursor: pending ? 'wait' : 'pointer',
+        fontFamily: 'inherit',
+        opacity: pending ? 0.7 : 1
+      }}
+    >
+      {pending ? '追加中…' : '追加する'}
+    </button>
   );
 }
 
