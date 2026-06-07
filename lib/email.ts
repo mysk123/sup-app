@@ -40,7 +40,14 @@ export async function sendEmail(args: {
     to: args.to,
     subject: args.subject,
     text: args.text,
-    html: args.html
+    html: args.html,
+    // 迷惑メール判定を回避するためのヘッダ
+    replyTo: FROM_EMAIL,
+    headers: {
+      'List-Unsubscribe': `<mailto:${FROM_EMAIL}?subject=unsubscribe>, <https://app.sup-app.org/my-stack>`,
+      'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+      'X-Entity-Ref-ID': `sup-app-${Date.now()}`
+    }
   });
 }
 
@@ -57,20 +64,20 @@ export function buildMonitoringReminderEmail(args: {
   };
   const periodLabel = PROMPT_LABELS[args.promptType];
 
-  const subject = `「${args.itemName}」を始めて ${periodLabel} — 振り返りませんか?`;
+  const subject = `[Sup. App] ${args.itemName} の経過記録のお願い(${periodLabel}経過)`;
 
-  const text = `「${args.itemName}」を飲み始めて ${periodLabel} が経ちました。
+  const text = `Sup. App をご利用いただきありがとうございます。
 
-体感に変化はありましたか?
-1分で振り返りを送信できます。
+${args.itemName} を飲み始めて ${periodLabel} が経過しました。
+体感の記録をお願いします(所要 1 分)。
 
-▼ 振り返る
+▼ 記録ページ
 https://app.sup-app.org/my-stack
 
-— Sup. App
+— Sup. App サポート
 https://app.sup-app.org/
 
-このメールに心当たりがない場合や、リマインダーを停止したい場合は、Sup. App にログインしてサプリの登録を解除してください。`;
+このメールの停止をご希望の場合、Sup. App にログインしてサプリの登録を解除いただくか、本メールに「unsubscribe」と返信してください。`;
 
   const html = `<!DOCTYPE html>
 <html lang="ja">
@@ -86,24 +93,26 @@ https://app.sup-app.org/
                 <span style="margin-left:6px;font-size:11px;color:#7a7a7a;font-weight:600;">App</span>
               </div>
               <div style="font-size:11px;color:#0f5b3e;letter-spacing:0.16em;font-weight:700;margin-bottom:14px;">
-                MONITORING REMINDER
+                経過記録のお願い
               </div>
               <h1 style="font-size:22px;font-weight:800;line-height:1.45;letter-spacing:-0.02em;margin:0 0 14px;">
-                「${args.itemName}」を始めて ${periodLabel} が経ちました。
+                ${args.itemName} を始めて ${periodLabel} が経過しました
               </h1>
               <p style="font-size:14px;color:#5a5a5a;line-height:1.85;margin:0 0 24px;">
-                体感に変化はありましたか?<br>
-                1分で振り返りを送信できます。続ける/様子見/やめる の判断材料になります。
+                体感の記録にご協力ください(所要 1 分)。<br>
+                続ける / 様子見 / やめる の判断材料になります。
               </p>
               <a href="https://app.sup-app.org/my-stack" style="display:inline-block;background:#0f5b3e;color:white;text-decoration:none;padding:13px 26px;border-radius:10px;font-size:14px;font-weight:700;">
-                振り返りに答える →
+                記録ページを開く
               </a>
             </td>
           </tr>
           <tr>
             <td style="padding:18px 32px;border-top:1px solid #e8e6e0;font-size:11px;color:#9a9a9a;line-height:1.7;">
-              このメールに心当たりがない場合は、<a href="https://app.sup-app.org/my-stack" style="color:#0f5b3e;">My Stack</a> でサプリの登録を解除すると今後のリマインダーは送られません。<br><br>
-              Sup. App / 運営: 矢崎 誠人(屋号: Place to talk)
+              このメールの停止をご希望の場合、<a href="https://app.sup-app.org/my-stack" style="color:#0f5b3e;">My Stack</a> でサプリの登録を解除するか、本メールに「unsubscribe」と返信してください。<br><br>
+              Sup. App<br>
+              運営: 矢崎 誠人(屋号: Place to talk)<br>
+              <a href="https://app.sup-app.org/tokushoho" style="color:#9a9a9a;">特定商取引法に基づく表示</a> ・ <a href="https://app.sup-app.org/privacy" style="color:#9a9a9a;">プライバシーポリシー</a>
             </td>
           </tr>
         </table>
