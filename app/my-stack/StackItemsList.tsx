@@ -72,19 +72,79 @@ export default function StackItemsList({ items }: { items: StackItem[] }) {
     return (
       <div
         style={{
-          padding: '36px 22px',
+          padding: '32px 24px',
           background: 'var(--card-bg)',
           border: '1px dashed var(--border)',
           borderRadius: 14,
-          textAlign: 'center',
-          color: 'var(--text-sub)',
-          fontSize: 14,
-          lineHeight: 1.75
+          textAlign: 'center'
         }}
       >
-        まだ登録されたサプリはありません。
-        <br />
-        上の「+ 新しいサプリを追加」から記録してみて。
+        <div
+          style={{
+            fontSize: 15,
+            fontWeight: 700,
+            color: 'var(--text-main)',
+            marginBottom: 6
+          }}
+        >
+          まだ登録されたサプリはありません
+        </div>
+        <div
+          style={{
+            fontSize: 13,
+            color: 'var(--text-sub)',
+            lineHeight: 1.75,
+            marginBottom: 18
+          }}
+        >
+          始め方はどっちでもOK。下から選んで。
+        </div>
+        <div
+          style={{
+            display: 'flex',
+            gap: 10,
+            justifyContent: 'center',
+            flexWrap: 'wrap'
+          }}
+        >
+          <a
+            href="https://sup-app.org/"
+            target="_blank"
+            rel="noopener"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+              background: 'var(--accent)',
+              color: 'white',
+              textDecoration: 'none',
+              padding: '10px 18px',
+              borderRadius: 10,
+              fontSize: 13,
+              fontWeight: 700
+            }}
+          >
+            まずは無料診断 →
+          </a>
+          <a
+            href="#add-form"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+              background: 'transparent',
+              color: 'var(--accent)',
+              textDecoration: 'none',
+              border: '1px solid var(--accent)',
+              padding: '9px 16px',
+              borderRadius: 10,
+              fontSize: 13,
+              fontWeight: 700
+            }}
+          >
+            すでに飲んでるものを登録
+          </a>
+        </div>
       </div>
     );
   }

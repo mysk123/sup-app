@@ -7,6 +7,7 @@ import AddStackItemForm from './AddStackItemForm';
 import StackItemsList, { type StackItem } from './StackItemsList';
 import TargetSelector from './TargetSelector';
 import ScorePanel from './ScorePanel';
+import WelcomePanel from './WelcomePanel';
 import { getBillingStatus } from '@/lib/billing/usage';
 
 export default async function MyStackPage() {
@@ -148,11 +149,20 @@ export default async function MyStackPage() {
         </p>
       </div>
 
+      {/* ウェルカム — target 未設定 or スタック空のときだけ表示 */}
+      {(targets.length === 0 ||
+        stackItems.filter((i) => i.is_active).length === 0) && (
+        <WelcomePanel
+          hasTargets={targets.length > 0}
+          hasItems={stackItems.filter((i) => i.is_active).length > 0}
+        />
+      )}
+
       {/* 目的(target)選択 */}
       <TargetSelector initialTargets={targets} />
 
-      {/* Optimization Score(常時表示、空スタックでもゼロ点で見える) */}
-      {billing && (
+      {/* Optimization Score — スタックがある場合のみ */}
+      {billing && stackItems.filter((i) => i.is_active).length > 0 && (
         <ScorePanel score={score} plan={billing.plan} />
       )}
 
@@ -173,12 +183,15 @@ export default async function MyStackPage() {
 
       {/* 追加フォーム */}
       <details
+        id="add-form"
+        open={stackItems.filter((i) => i.is_active).length === 0}
         style={{
           background: 'var(--card-bg)',
           border: '1px solid var(--border)',
           borderRadius: 14,
           padding: '18px 22px',
-          marginBottom: 28
+          marginBottom: 28,
+          scrollMarginTop: 16
         }}
       >
         <summary
