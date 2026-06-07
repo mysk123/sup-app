@@ -118,8 +118,9 @@ export default async function Home() {
             alignItems: 'center'
           }}
         >
+          {/* メイン CTA: まずは無料診断 */}
           <a
-            href={user ? '/my-stack' : '/login'}
+            href="https://sup-app.org/"
             style={{
               display: 'inline-flex',
               alignItems: 'center',
@@ -133,10 +134,11 @@ export default async function Home() {
               fontWeight: 700
             }}
           >
-            {user ? 'My Stack を開く →' : 'ログインして始める →'}
+            まずは無料で診断する →
           </a>
+          {/* サブ CTA: ログイン/My Stack */}
           <a
-            href="https://sup-app.org/"
+            href={user ? '/my-stack' : '/login'}
             style={{
               display: 'inline-flex',
               alignItems: 'center',
@@ -151,8 +153,34 @@ export default async function Home() {
               border: '1px solid var(--accent)'
             }}
           >
-            まずは診断する(sup-app.org)
+            {user
+              ? 'My Stack を開く'
+              : 'すでに飲んでる人はログイン'}
           </a>
+        </div>
+        <div
+          style={{
+            fontSize: 12,
+            color: 'var(--text-sub)',
+            marginTop: 14,
+            display: 'flex',
+            gap: 14,
+            flexWrap: 'wrap',
+            alignItems: 'center'
+          }}
+        >
+          <span>
+            <span style={{ color: 'var(--accent)', fontWeight: 700 }}>✓</span>{' '}
+            診断は完全無料・5分で完了
+          </span>
+          <span>
+            <span style={{ color: 'var(--accent)', fontWeight: 700 }}>✓</span>{' '}
+            登録不要で始められる
+          </span>
+          <span>
+            <span style={{ color: 'var(--accent)', fontWeight: 700 }}>✓</span>{' '}
+            結果はそのまま My Stack に送れる
+          </span>
         </div>
       </section>
 
@@ -294,7 +322,24 @@ export default async function Home() {
           marginBottom: 64
         }}
       >
-        <SectionLabel>FOR NEW USERS</SectionLabel>
+        <div
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 6,
+            fontSize: 11,
+            fontFamily: 'Inter, sans-serif',
+            letterSpacing: '0.18em',
+            color: 'var(--accent)',
+            marginBottom: 14,
+            fontWeight: 700,
+            padding: '4px 10px',
+            background: 'var(--accent-light)',
+            borderRadius: 100
+          }}
+        >
+          FREE / 登録不要
+        </div>
         <div style={{ fontSize: 22, fontWeight: 800, marginBottom: 10 }}>
           まだサプリを試したことがない方へ
         </div>
@@ -308,7 +353,8 @@ export default async function Home() {
           }}
         >
           悩みから「動かす数値」「効く成分」「具体的なサプリ製品」までを
-          5分の問診で診断。診断結果はそのまま Sup. App の My Stack に送れます。
+          5分の問診で診断。完全無料・アカウント登録なしで使えます。
+          診断結果はそのまま Sup. App の My Stack に送れます。
         </p>
         <a
           href="https://sup-app.org/"
@@ -325,7 +371,7 @@ export default async function Home() {
             fontWeight: 700
           }}
         >
-          sup-app.org で診断する →
+          無料で診断を始める →
         </a>
       </section>
     </div>
