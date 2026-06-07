@@ -45,7 +45,7 @@ export default function TokushohoPage() {
       </Row>
 
       <Row label="販売価格">
-        Pro プラン: 月額 980円(税込)
+        Pro プラン: 月額 600円(税込)
       </Row>
 
       <Row label="商品代金以外の必要料金">

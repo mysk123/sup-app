@@ -296,7 +296,7 @@ export default async function Home() {
           />
           <PricingCard
             name="Pro"
-            price="¥980"
+            price="¥600"
             priceNote="月額(税込)"
             highlighted
             features={[

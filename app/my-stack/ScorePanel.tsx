@@ -198,7 +198,7 @@ export default function ScorePanel({
                 opacity: upgrading ? 0.7 : 1
               }}
             >
-              {upgrading ? '移動中…' : 'Pro で全部見る (¥980/月) →'}
+              {upgrading ? '移動中…' : 'Pro で全部見る (¥600/月) →'}
             </button>
           </div>
         )}

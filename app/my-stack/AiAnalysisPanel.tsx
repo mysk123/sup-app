@@ -198,7 +198,7 @@ export default function AiAnalysisPanel({
                   opacity: upgrading ? 0.7 : 1
                 }}
               >
-                {upgrading ? '移動中…' : 'Pro で無制限にする (¥980/月)'}
+                {upgrading ? '移動中…' : 'Pro で無制限にする (¥600/月)'}
               </button>
             )}
           </div>
@@ -246,7 +246,7 @@ export default function AiAnalysisPanel({
               marginBottom: 14
             }}
           >
-            Pro プラン(月額 ¥980)にアップグレードすると、AI
+            Pro プラン(月額 ¥600)にアップグレードすると、AI
             包括分析が無制限になります。サプリを増やすたびに分析して、
             スタックを最適化していけます。
           </div>
