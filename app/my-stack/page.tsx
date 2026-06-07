@@ -127,6 +127,17 @@ export default async function MyStackPage() {
         <div
           style={{ display: 'flex', alignItems: 'center', gap: 14 }}
         >
+          <a
+            href="/trends"
+            style={{
+              fontSize: 12,
+              color: 'var(--accent)',
+              textDecoration: 'none',
+              fontWeight: 700
+            }}
+          >
+            TRENDS →
+          </a>
           <span
             style={{ fontSize: 12, color: 'var(--text-sub)' }}
           >

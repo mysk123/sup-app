@@ -53,6 +53,12 @@ function Footer() {
         }}
       >
         <a
+          href="/trends"
+          style={{ color: 'var(--text-sub)', textDecoration: 'none' }}
+        >
+          トレンド
+        </a>
+        <a
           href="/terms"
           style={{ color: 'var(--text-sub)', textDecoration: 'none' }}
         >
