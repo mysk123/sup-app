@@ -85,6 +85,25 @@ export function computeScore(
 ): ScoreResult {
   const activeItems = items.filter((i) => i.is_active);
 
+  // アクティブなサプリが 0 → 全軸を「評価不能」(0点)にする
+  // (重複・干渉・タイミングを「ゼロだから満点」と扱うのは不自然)
+  if (activeItems.length === 0) {
+    const detail = '評価対象のサプリが未登録';
+    return {
+      total: 0,
+      axes: {
+        coverage: { score: 0, max: 20, detail },
+        target_alignment: { score: 0, max: 20, detail },
+        synergy: { score: 0, max: 15, detail },
+        overdose_risk: { score: 0, max: 15, detail },
+        interaction_risk: { score: 0, max: 15, detail },
+        timing: { score: 0, max: 10, detail },
+        continuity: { score: 0, max: 5, detail }
+      },
+      improvements: []
+    };
+  }
+
   // 全成分を集計
   const presentKeys = new Set<IngredientKey>();
   for (const item of activeItems) {
