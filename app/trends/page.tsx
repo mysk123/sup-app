@@ -15,6 +15,7 @@ type Trend = {
   id: string;
   title: string;
   description: string;
+  body: string | null;
   trend_type: 'sns_buzz' | 'celebrity' | 'research';
   category: string | null;
   source_url: string | null;
@@ -381,6 +382,24 @@ function TrendCard({ trend }: { trend: Trend }) {
         }}
       >
         <div style={{ paddingTop: 14 }}>{trend.description}</div>
+
+        {/* 長文 body があれば展開表示 */}
+        {trend.body && (
+          <div
+            style={{
+              marginTop: 16,
+              padding: '14px 16px',
+              background: 'rgba(15, 91, 62, 0.04)',
+              borderLeft: '3px solid var(--accent)',
+              borderRadius: 8,
+              fontSize: 13,
+              lineHeight: 1.95,
+              whiteSpace: 'pre-wrap'
+            }}
+          >
+            {trend.body}
+          </div>
+        )}
 
         {ingredientNames.length > 0 && (
           <div style={{ marginTop: 14, display: 'flex', gap: 6, flexWrap: 'wrap' }}>
