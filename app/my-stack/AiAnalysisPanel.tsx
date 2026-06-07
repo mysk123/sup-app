@@ -367,7 +367,7 @@ export default function AiAnalysisPanel({
                 marginBottom: 8
               }}
             >
-              OVERALL
+              OVERALL — 全体評価
             </div>
             <div
               style={{
@@ -378,6 +378,31 @@ export default function AiAnalysisPanel({
             >
               {result.overall}
             </div>
+          </div>
+
+          {/* 改善案セクションラベル */}
+          <div
+            style={{
+              fontSize: 10,
+              fontFamily: 'Inter, sans-serif',
+              letterSpacing: '0.16em',
+              fontWeight: 700,
+              color: 'var(--accent)',
+              marginTop: 6,
+              display: 'flex',
+              gap: 10,
+              alignItems: 'center'
+            }}
+          >
+            <span>RECOMMENDATIONS — 改善案 {result.recommendations.length} 件</span>
+            <span style={{
+              fontSize: 10,
+              color: 'var(--text-sub)',
+              fontWeight: 600,
+              letterSpacing: '0.04em'
+            }}>
+              タップで詳細
+            </span>
           </div>
 
           {result.recommendations.map((rec, i) => (
@@ -522,46 +547,78 @@ function RecommendationCard({ rec }: { rec: Recommendation }) {
   const s = styleByPriority[rec.priority];
 
   return (
-    <div
+    <details
       style={{
         background: s.bg,
         border: `1px solid ${s.border}`,
         borderRadius: 12,
-        padding: '14px 18px'
+        padding: 0,
+        overflow: 'hidden'
       }}
     >
-      <div
+      <summary
         style={{
-          fontSize: 10,
-          fontFamily: 'Inter, sans-serif',
-          letterSpacing: '0.16em',
-          fontWeight: 700,
-          color: s.labelColor,
-          marginBottom: 6
+          padding: '14px 18px',
+          cursor: 'pointer',
+          listStyle: 'none',
+          userSelect: 'none',
+          display: 'flex',
+          gap: 10,
+          alignItems: 'center'
         }}
       >
-        {s.label}
-      </div>
+        <span
+          style={{
+            fontSize: 10,
+            fontFamily: 'Inter, sans-serif',
+            letterSpacing: '0.16em',
+            fontWeight: 700,
+            color: s.labelColor,
+            background: 'rgba(255,255,255,0.7)',
+            padding: '3px 8px',
+            borderRadius: 100,
+            flexShrink: 0,
+            whiteSpace: 'nowrap'
+          }}
+        >
+          {s.label}
+        </span>
+        <span
+          style={{
+            fontSize: 14,
+            fontWeight: 700,
+            color: 'var(--text-main)',
+            lineHeight: 1.45,
+            flex: 1
+          }}
+        >
+          {rec.title}
+        </span>
+        <span
+          aria-hidden
+          style={{
+            fontSize: 14,
+            color: 'var(--text-sub)',
+            fontWeight: 700,
+            flexShrink: 0,
+            transition: 'transform 0.2s ease'
+          }}
+          className="rec-chevron"
+        >
+          ▾
+        </span>
+      </summary>
       <div
         style={{
-          fontSize: 14,
-          fontWeight: 700,
-          color: 'var(--text-main)',
-          marginBottom: 6,
-          lineHeight: 1.45
-        }}
-      >
-        {rec.title}
-      </div>
-      <div
-        style={{
+          padding: '0 18px 14px 18px',
           fontSize: 13,
           color: 'var(--text-sub)',
-          lineHeight: 1.75
+          lineHeight: 1.85,
+          borderTop: `1px solid ${s.border}`
         }}
       >
-        {rec.description}
+        <div style={{ paddingTop: 12 }}>{rec.description}</div>
       </div>
-    </div>
+    </details>
   );
 }
