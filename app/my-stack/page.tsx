@@ -80,8 +80,15 @@ export default async function MyStackPage() {
         ).added_at
       : null;
 
+  // 効果実感スコアのために responses を渡す
+  const effectResponses = (responsesRaw ?? []).map((r) => ({
+    stack_item_id: r.stack_item_id,
+    effect: r.effect as 'good' | 'neutral' | 'bad',
+    created_at: r.created_at
+  }));
+
   // スコア計算
-  const score = computeScore(stackItems, targets, oldest);
+  const score = computeScore(stackItems, targets, oldest, effectResponses);
 
   return (
     <div className="container" style={{ maxWidth: 720 }}>

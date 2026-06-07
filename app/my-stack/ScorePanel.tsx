@@ -17,7 +17,8 @@ const AXIS_LABELS: Record<keyof ScoreResult['axes'], string> = {
   overdose_risk: '過剰摂取の安全度',
   interaction_risk: '干渉の安全度',
   timing: 'タイミング最適度',
-  continuity: '継続性'
+  continuity: '継続性',
+  effect: '効果実感'
 };
 
 export default function ScorePanel({

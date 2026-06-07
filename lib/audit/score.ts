@@ -58,13 +58,14 @@ export type AxisScore = {
 export type ScoreResult = {
   total: number;
   axes: {
-    coverage: AxisScore; // 基礎栄養
-    target_alignment: AxisScore; // 目的整合
-    synergy: AxisScore; // シナジー
-    overdose_risk: AxisScore; // 過剰リスクの低さ
-    interaction_risk: AxisScore; // 干渉リスクの低さ
-    timing: AxisScore; // タイミング
-    continuity: AxisScore; // 継続性
+    coverage: AxisScore; // 基礎栄養 (20)
+    target_alignment: AxisScore; // 目的整合 (20)
+    synergy: AxisScore; // シナジー (15)
+    overdose_risk: AxisScore; // 過剰リスクの低さ (15)
+    interaction_risk: AxisScore; // 干渉リスクの低さ (10)
+    timing: AxisScore; // タイミング (5)
+    continuity: AxisScore; // 継続性 (5)
+    effect: AxisScore; // 効果実感 (10) — モニタリング回答から算定
   };
   improvements: {
     axis: keyof ScoreResult['axes'];
@@ -74,6 +75,13 @@ export type ScoreResult = {
   }[];
 };
 
+/** モニタリング回答(score 計算用に必要な最小フィールド) */
+export type EffectResponseForScore = {
+  stack_item_id: string;
+  effect: 'good' | 'neutral' | 'bad';
+  created_at: string;
+};
+
 /**
  * メイン関数: stack + target から ScoreResult を計算
  */
@@ -81,12 +89,13 @@ export function computeScore(
   items: StackItem[],
   targets: Target[],
   /** 最も古い added_at(継続性スコア用) */
-  oldestAddedAt: string | null
+  oldestAddedAt: string | null,
+  /** モニタリング回答(効果実感スコア用、新しい順) */
+  responses: EffectResponseForScore[] = []
 ): ScoreResult {
   const activeItems = items.filter((i) => i.is_active);
 
   // アクティブなサプリが 0 → 全軸を「評価不能」(0点)にする
-  // (重複・干渉・タイミングを「ゼロだから満点」と扱うのは不自然)
   if (activeItems.length === 0) {
     const detail = '評価対象のサプリが未登録';
     return {
@@ -96,9 +105,10 @@ export function computeScore(
         target_alignment: { score: 0, max: 20, detail },
         synergy: { score: 0, max: 15, detail },
         overdose_risk: { score: 0, max: 15, detail },
-        interaction_risk: { score: 0, max: 15, detail },
-        timing: { score: 0, max: 10, detail },
-        continuity: { score: 0, max: 5, detail }
+        interaction_risk: { score: 0, max: 10, detail },
+        timing: { score: 0, max: 5, detail },
+        continuity: { score: 0, max: 5, detail },
+        effect: { score: 0, max: 10, detail }
       },
       improvements: []
     };
@@ -121,6 +131,7 @@ export function computeScore(
   const interaction_risk = scoreInteraction(findings);
   const timing = scoreTiming(activeItems);
   const continuity = scoreContinuity(oldestAddedAt);
+  const effect = scoreEffect(activeItems, responses);
 
   const total =
     coverage.score +
@@ -129,7 +140,8 @@ export function computeScore(
     overdose_risk.score +
     interaction_risk.score +
     timing.score +
-    continuity.score;
+    continuity.score +
+    effect.score;
 
   const improvements = generateImprovements({
     presentKeys,
@@ -139,7 +151,8 @@ export function computeScore(
     synergy,
     overdose_risk,
     interaction_risk,
-    timing
+    timing,
+    effect
   });
 
   return {
@@ -151,7 +164,8 @@ export function computeScore(
       overdose_risk,
       interaction_risk,
       timing,
-      continuity
+      continuity,
+      effect
     },
     improvements
   };
@@ -263,16 +277,15 @@ function scoreInteraction(
   findings: ReturnType<typeof auditStack>
 ): AxisScore {
   const interactions = findings.filter((f) => f.type === 'interaction');
-  // 1件 -5、danger は -8
   let penalty = 0;
   for (const f of interactions) {
-    penalty += f.severity === 'danger' ? 8 : 5;
+    penalty += f.severity === 'danger' ? 6 : 4;
   }
-  penalty = Math.min(15, penalty);
-  const score = 15 - penalty;
+  penalty = Math.min(10, penalty);
+  const score = 10 - penalty;
   return {
     score,
-    max: 15,
+    max: 10,
     detail:
       interactions.length === 0
         ? '干渉ルールには触れてない'
@@ -281,7 +294,6 @@ function scoreInteraction(
 }
 
 function scoreTiming(items: StackItem[]): AxisScore {
-  // 朝に集中しすぎ・bedtime バランスをチェック
   const buckets: Record<string, number> = {
     morning: 0,
     lunch: 0,
@@ -297,21 +309,88 @@ function scoreTiming(items: StackItem[]): AxisScore {
     }
   }
 
-  let score = 10;
+  let score = 5;
   const issues: string[] = [];
   if (buckets.morning >= 5) {
-    score -= 4;
+    score -= 2;
     issues.push(`朝に${buckets.morning}本集中`);
   }
   if (buckets.none >= 2) {
-    score -= 3;
+    score -= 2;
     issues.push(`${buckets.none}本のタイミング未設定`);
   }
   score = Math.max(0, score);
   return {
     score,
-    max: 10,
+    max: 5,
     detail: issues.length === 0 ? 'タイミング配分は良好' : issues.join(' / ')
+  };
+}
+
+/**
+ * 効果実感(モニタリング回答から算定)
+ * - 各 active item の最新回答を取って effect を平均
+ * - good=10 / neutral=5 / bad=0 でスケール
+ */
+function scoreEffect(
+  items: StackItem[],
+  responses: EffectResponseForScore[]
+): AxisScore {
+  if (responses.length === 0) {
+    return {
+      score: 0,
+      max: 10,
+      detail: 'モニタリング回答がまだない。1週・3週で振り返ると活性化'
+    };
+  }
+
+  // 各 item の最新回答(responses は新しい順前提)
+  const latestByItem = new Map<string, EffectResponseForScore>();
+  for (const r of responses) {
+    if (!latestByItem.has(r.stack_item_id)) {
+      latestByItem.set(r.stack_item_id, r);
+    }
+  }
+
+  // active item に絞って効果値を平均
+  const itemIds = new Set(items.map((i) => i.id));
+  const relevantResponses = Array.from(latestByItem.values()).filter((r) =>
+    itemIds.has(r.stack_item_id)
+  );
+
+  if (relevantResponses.length === 0) {
+    return {
+      score: 0,
+      max: 10,
+      detail: 'まだ振り返り済みのサプリがない'
+    };
+  }
+
+  const scoreMap: Record<string, number> = { good: 10, neutral: 5, bad: 0 };
+  const sum = relevantResponses.reduce(
+    (acc, r) => acc + scoreMap[r.effect],
+    0
+  );
+  const avg = sum / relevantResponses.length;
+
+  const goodCount = relevantResponses.filter((r) => r.effect === 'good').length;
+  const badCount = relevantResponses.filter((r) => r.effect === 'bad').length;
+
+  let detail: string;
+  if (relevantResponses.length < items.length) {
+    detail = `${relevantResponses.length}/${items.length}本 振り返り済み。良い: ${goodCount} / 悪い: ${badCount}`;
+  } else if (badCount === 0 && goodCount > 0) {
+    detail = '効果実感は良好';
+  } else if (badCount > 0) {
+    detail = `${badCount}本に効果が出ていない、見直し候補`;
+  } else {
+    detail = '体感は中立、もう少し継続を';
+  }
+
+  return {
+    score: avg,
+    max: 10,
+    detail
   };
 }
 
@@ -359,6 +438,7 @@ function generateImprovements(ctx: {
   overdose_risk: AxisScore;
   interaction_risk: AxisScore;
   timing: AxisScore;
+  effect: AxisScore;
 }): ScoreResult['improvements'] {
   const improvements: ScoreResult['improvements'] = [];
 
@@ -432,13 +512,24 @@ function generateImprovements(ctx: {
   }
 
   // タイミング
-  if (ctx.timing.score < 10) {
+  if (ctx.timing.score < 5) {
     improvements.push({
       axis: 'timing',
       title: 'タイミング配分を最適化',
       description:
         '朝に集中しすぎ or タイミング未設定のサプリがある。脂溶性は食事と、空腹時に効くものは食前に分散',
       points_estimate: 3
+    });
+  }
+
+  // 効果実感
+  if (ctx.effect.score < 5) {
+    improvements.push({
+      axis: 'effect',
+      title: '振り返り(モニタリング)に答える',
+      description:
+        '1週・3週で「体感どう?」に答えると、効果実感スコアが算定される。続ける/やめるの判断材料にもなる',
+      points_estimate: 5
     });
   }
 
