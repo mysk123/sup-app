@@ -64,20 +64,21 @@ export function buildMonitoringReminderEmail(args: {
   };
   const periodLabel = PROMPT_LABELS[args.promptType];
 
-  const subject = `[Sup. App] ${args.itemName} の経過記録のお願い(${periodLabel}経過)`;
+  const subject = `${args.itemName}、飲み始めて${periodLabel}。体感どう?`;
 
-  const text = `Sup. App をご利用いただきありがとうございます。
+  const text = `${args.itemName} を飲み始めて ${periodLabel} が経ったよ。
 
-${args.itemName} を飲み始めて ${periodLabel} が経過しました。
-体感の記録をお願いします(所要 1 分)。
+「効いてる気がする」「変わらない」「合わないかも」— どれでも OK。
+1 分で記録しておくと、後で続けるかやめるかの判断材料になる。
 
-▼ 記録ページ
+▼ 記録する
 https://app.sup-app.org/my-stack
 
-— Sup. App サポート
-https://app.sup-app.org/
+— Sup. App
 
-このメールの停止をご希望の場合、Sup. App にログインしてサプリの登録を解除いただくか、本メールに「unsubscribe」と返信してください。`;
+
+このメールが不要な場合、Sup. App でこのサプリの登録を解除するか、
+本メールに「unsubscribe」と返信してください。`;
 
   const html = `<!DOCTYPE html>
 <html lang="ja">
@@ -93,17 +94,17 @@ https://app.sup-app.org/
                 <span style="margin-left:6px;font-size:11px;color:#7a7a7a;font-weight:600;">App</span>
               </div>
               <div style="font-size:11px;color:#0f5b3e;letter-spacing:0.16em;font-weight:700;margin-bottom:14px;">
-                経過記録のお願い
+                ${periodLabel} 経過
               </div>
-              <h1 style="font-size:22px;font-weight:800;line-height:1.45;letter-spacing:-0.02em;margin:0 0 14px;">
-                ${args.itemName} を始めて ${periodLabel} が経過しました
+              <h1 style="font-size:24px;font-weight:800;line-height:1.4;letter-spacing:-0.02em;margin:0 0 14px;">
+                ${args.itemName}、<br>飲み始めて ${periodLabel} だね。
               </h1>
               <p style="font-size:14px;color:#5a5a5a;line-height:1.85;margin:0 0 24px;">
-                体感の記録にご協力ください(所要 1 分)。<br>
-                続ける / 様子見 / やめる の判断材料になります。
+                体感どう?「効いてる気がする」「変わらない」「合わないかも」<br>
+                — どれでも 1 分で残しとくと、後で続けるかやめるかの判断材料になる。
               </p>
               <a href="https://app.sup-app.org/my-stack" style="display:inline-block;background:#0f5b3e;color:white;text-decoration:none;padding:13px 26px;border-radius:10px;font-size:14px;font-weight:700;">
-                記録ページを開く
+                記録する
               </a>
             </td>
           </tr>
