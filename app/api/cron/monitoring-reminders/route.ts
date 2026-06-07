@@ -18,12 +18,16 @@ export const maxDuration = 60;
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: Request) {
-  // 認証チェック(Vercel Cron は自動でこのヘッダを付ける)
+  // 認証チェック:Vercel Cron User-Agent または CRON_SECRET 一致で通す
+  // (CRON_SECRET が Sensitive で値確認できない場合の保険)
   const authHeader = request.headers.get('authorization');
-  if (
-    process.env.CRON_SECRET &&
-    authHeader !== `Bearer ${process.env.CRON_SECRET}`
-  ) {
+  const userAgent = request.headers.get('user-agent') ?? '';
+  const isVercelCron = userAgent.startsWith('vercel-cron/');
+  const cronSecret = process.env.CRON_SECRET ?? '';
+  const secretOk =
+    cronSecret.length > 0 && authHeader === `Bearer ${cronSecret}`;
+
+  if (!isVercelCron && !secretOk) {
     return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
   }
 
