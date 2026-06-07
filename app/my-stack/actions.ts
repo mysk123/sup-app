@@ -81,6 +81,65 @@ export async function updateTargets(targets: string[]) {
   revalidatePath('/my-stack');
 }
 
+/** モニタリング: 振り返りに回答 */
+export async function submitMonitoringResponse(args: {
+  prompt_id: string;
+  stack_item_id: string;
+  prompt_type: string;
+  effect: 'good' | 'neutral' | 'bad';
+  continue_intent?: 'continue' | 'observe' | 'stop' | null;
+  notes?: string;
+}) {
+  const supabase = createClient();
+  const {
+    data: { user }
+  } = await supabase.auth.getUser();
+  if (!user) redirect('/login');
+
+  // 1. 回答を保存
+  const { error: insertError } = await supabase
+    .from('monitoring_responses')
+    .insert({
+      user_id: user.id,
+      stack_item_id: args.stack_item_id,
+      prompt_id: args.prompt_id,
+      prompt_type: args.prompt_type,
+      effect: args.effect,
+      continue_intent: args.continue_intent ?? null,
+      notes: args.notes?.trim() || null
+    });
+  if (insertError) {
+    return { error: insertError.message };
+  }
+
+  // 2. プロンプトを「回答済み」にマーク
+  await supabase
+    .from('monitoring_prompts')
+    .update({ responded_at: new Date().toISOString() })
+    .eq('id', args.prompt_id)
+    .eq('user_id', user.id);
+
+  revalidatePath('/my-stack');
+  return { ok: true };
+}
+
+/** モニタリング: 振り返りをスキップ(後で答える) */
+export async function dismissMonitoringPrompt(prompt_id: string) {
+  const supabase = createClient();
+  const {
+    data: { user }
+  } = await supabase.auth.getUser();
+  if (!user) redirect('/login');
+
+  await supabase
+    .from('monitoring_prompts')
+    .update({ dismissed_at: new Date().toISOString() })
+    .eq('id', prompt_id)
+    .eq('user_id', user.id);
+
+  revalidatePath('/my-stack');
+}
+
 export async function toggleActiveStackItem(formData: FormData) {
   const supabase = createClient();
   const {

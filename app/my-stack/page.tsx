@@ -29,6 +29,41 @@ export default async function MyStackPage() {
   const findings = auditStack(stackItems);
   const billing = await getBillingStatus();
 
+  // モニタリング: 期限が来てて未回答・未スキップの prompts
+  const { data: duePromptsRaw } = await supabase
+    .from('monitoring_prompts')
+    .select('id, stack_item_id, prompt_type, scheduled_at')
+    .eq('user_id', user.id)
+    .lte('scheduled_at', new Date().toISOString())
+    .is('responded_at', null)
+    .is('dismissed_at', null)
+    .order('scheduled_at', { ascending: true });
+
+  const duePromptsByItem: Record<
+    string,
+    { id: string; stack_item_id: string; prompt_type: string; scheduled_at: string }[]
+  > = {};
+  for (const p of duePromptsRaw ?? []) {
+    if (!duePromptsByItem[p.stack_item_id]) duePromptsByItem[p.stack_item_id] = [];
+    duePromptsByItem[p.stack_item_id].push(p);
+  }
+
+  // モニタリング: 過去の回答
+  const { data: responsesRaw } = await supabase
+    .from('monitoring_responses')
+    .select(
+      'id, stack_item_id, prompt_type, effect, continue_intent, notes, created_at'
+    )
+    .eq('user_id', user.id)
+    .order('created_at', { ascending: false });
+
+  const responsesByItem: Record<string, typeof responsesRaw> = {};
+  for (const r of responsesRaw ?? []) {
+    if (!responsesByItem[r.stack_item_id])
+      responsesByItem[r.stack_item_id] = [];
+    responsesByItem[r.stack_item_id]!.push(r);
+  }
+
   // profiles から targets を取得
   const { data: profile } = await supabase
     .from('profiles')
@@ -225,7 +260,11 @@ export default async function MyStackPage() {
         </div>
       )}
 
-      <StackItemsList items={stackItems} />
+      <StackItemsList
+        items={stackItems}
+        duePromptsByItem={duePromptsByItem as any}
+        responsesByItem={responsesByItem as any}
+      />
     </div>
   );
 }

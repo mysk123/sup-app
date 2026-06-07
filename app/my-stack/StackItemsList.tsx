@@ -6,6 +6,15 @@
  */
 import { useOptimistic, useTransition } from 'react';
 import { deleteStackItem, toggleActiveStackItem } from './actions';
+import {
+  MonitoringBadge,
+  MonitoringForm,
+  MonitoringHistory
+} from './MonitoringPanel';
+import type {
+  MonitoringPrompt,
+  MonitoringResponse
+} from '@/lib/monitoring/types';
 
 const TIMING_LABELS: Record<string, string> = {
   morning: '朝',
@@ -32,7 +41,15 @@ type OptimisticAction =
   | { type: 'delete'; id: string }
   | { type: 'toggle'; id: string };
 
-export default function StackItemsList({ items }: { items: StackItem[] }) {
+export default function StackItemsList({
+  items,
+  duePromptsByItem = {},
+  responsesByItem = {}
+}: {
+  items: StackItem[];
+  duePromptsByItem?: Record<string, MonitoringPrompt[]>;
+  responsesByItem?: Record<string, MonitoringResponse[]>;
+}) {
   const [optimisticItems, applyOptimistic] = useOptimistic<
     StackItem[],
     OptimisticAction
@@ -151,13 +168,19 @@ export default function StackItemsList({ items }: { items: StackItem[] }) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-      {optimisticItems.map((item) => (
+      {optimisticItems.map((item) => {
+        const duePrompts = duePromptsByItem[item.id] ?? [];
+        const responses = responsesByItem[item.id] ?? [];
+        const hasDue = duePrompts.length > 0;
+        return (
         <div
           key={item.id}
           style={{
             padding: '18px 22px',
             background: 'var(--card-bg)',
-            border: '1px solid var(--border)',
+            border: hasDue && item.is_active
+              ? '1px solid #fcdca2'
+              : '1px solid var(--border)',
             borderRadius: 12,
             opacity: item.is_active ? 1 : 0.55,
             transition: 'opacity 0.15s ease'
@@ -177,10 +200,17 @@ export default function StackItemsList({ items }: { items: StackItem[] }) {
                   fontSize: 16,
                   fontWeight: 700,
                   marginBottom: 2,
-                  lineHeight: 1.4
+                  lineHeight: 1.4,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  flexWrap: 'wrap'
                 }}
               >
                 {item.name}
+                {hasDue && item.is_active && (
+                  <MonitoringBadge prompt={duePrompts[0]} />
+                )}
               </div>
               {item.brand && (
                 <div
@@ -303,8 +333,17 @@ export default function StackItemsList({ items }: { items: StackItem[] }) {
               {item.notes}
             </div>
           )}
+
+          {/* 振り返り(due な prompt があれば最古の1つを表示) */}
+          {hasDue && item.is_active && (
+            <MonitoringForm prompt={duePrompts[0]} itemId={item.id} />
+          )}
+
+          {/* 過去の振り返り履歴 */}
+          {responses.length > 0 && <MonitoringHistory responses={responses} />}
         </div>
-      ))}
+      );
+      })}
     </div>
   );
 }
