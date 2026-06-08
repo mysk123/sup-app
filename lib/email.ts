@@ -1,31 +1,27 @@
 /**
- * メール送信ヘルパー(Gmail SMTP 経由)
+ * メール送信ヘルパー(Resend 経由 / sup-app.org 独自ドメイン認証済み)
  *
  * 必須 env:
- *   GMAIL_APP_PASSWORD — Gmail のアプリパスワード(16文字)
+ *   RESEND_API_KEY — Resend の API キー
  *
- * 送信元: supapp.support@gmail.com
+ * 送信元: noreply@sup-app.org (Resend で SPF/DKIM/DMARC 認証済み)
+ * 返信先: supapp.support@gmail.com (問い合わせ窓口)
  */
-import nodemailer from 'nodemailer';
+import { Resend } from 'resend';
 
-const FROM_EMAIL = 'supapp.support@gmail.com';
-const FROM_NAME = 'Sup. App サポート';
+const FROM_EMAIL = 'noreply@sup-app.org';
+const FROM_NAME = 'Sup. App';
+const REPLY_TO = 'supapp.support@gmail.com';
 
-let _transporter: nodemailer.Transporter | null = null;
+let _resend: Resend | null = null;
 
-function getTransporter(): nodemailer.Transporter {
-  if (_transporter) return _transporter;
-  if (!process.env.GMAIL_APP_PASSWORD) {
-    throw new Error('GMAIL_APP_PASSWORD is not set');
+function getResend(): Resend {
+  if (_resend) return _resend;
+  if (!process.env.RESEND_API_KEY) {
+    throw new Error('RESEND_API_KEY is not set');
   }
-  _transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-      user: FROM_EMAIL,
-      pass: process.env.GMAIL_APP_PASSWORD
-    }
-  });
-  return _transporter;
+  _resend = new Resend(process.env.RESEND_API_KEY);
+  return _resend;
 }
 
 export async function sendEmail(args: {
@@ -34,19 +30,18 @@ export async function sendEmail(args: {
   text: string;
   html: string;
 }) {
-  const transporter = getTransporter();
-  return transporter.sendMail({
-    from: `"${FROM_NAME}" <${FROM_EMAIL}>`,
+  const resend = getResend();
+  return resend.emails.send({
+    from: `${FROM_NAME} <${FROM_EMAIL}>`,
     to: args.to,
     subject: args.subject,
     text: args.text,
     html: args.html,
-    // 迷惑メール判定を回避するためのヘッダ
-    replyTo: FROM_EMAIL,
+    replyTo: REPLY_TO,
+    // List-Unsubscribe ヘッダ(Gmail/Outlook の真面目な送信者扱いを得る)
     headers: {
-      'List-Unsubscribe': `<mailto:${FROM_EMAIL}?subject=unsubscribe>, <https://app.sup-app.org/my-stack>`,
-      'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
-      'X-Entity-Ref-ID': `sup-app-${Date.now()}`
+      'List-Unsubscribe': `<mailto:${REPLY_TO}?subject=unsubscribe>, <https://app.sup-app.org/my-stack>`,
+      'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click'
     }
   });
 }
