@@ -26,7 +26,7 @@ export default function TokushohoPage() {
       <Row label="運営責任者">矢崎 誠人</Row>
 
       <Row label="所在地">
-        ご請求があれば遅滞なく開示いたします。下記のお問い合わせ先までご連絡ください。
+        〒107-0062 東京都港区南青山3丁目1番36号 青山丸竹ビル6F
       </Row>
 
       <Row label="連絡先">
