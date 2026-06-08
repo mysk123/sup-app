@@ -38,7 +38,7 @@ export default function AddStackItemForm() {
 
   async function detectIngredients() {
     if (!name.trim()) {
-      setDetectError('まず商品名を入力してね');
+      setDetectError('まず商品名をご入力ください');
       return;
     }
     setDetecting(true);
@@ -123,7 +123,7 @@ export default function AddStackItemForm() {
           }}
         >
           コンビ製品(オキシカット等)や成分名が分かりにくい商品は、
-          AI で主要成分を推測 → 監査・分析の精度が上がる
+          AI で主要成分を推測することで、監査・分析の精度が上がります。
         </div>
 
         {detectError && (
@@ -220,8 +220,8 @@ export default function AddStackItemForm() {
                   color: 'var(--text-sub)'
                 }}
               >
-                AIは成分を特定できなかった。商品名を具体的にする or
-                ブランド名を加えてみて。
+                AI は成分を特定できませんでした。商品名を具体的にするか、
+                ブランド名を加えてお試しください。
               </div>
             )}
           </div>

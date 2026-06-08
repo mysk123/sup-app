@@ -59,12 +59,12 @@ export function buildMonitoringReminderEmail(args: {
   };
   const periodLabel = PROMPT_LABELS[args.promptType];
 
-  const subject = `${args.itemName}、飲み始めて${periodLabel}。体感どう?`;
+  const subject = `${args.itemName}、飲み始めて${periodLabel}が経過しました。体感はいかがですか?`;
 
-  const text = `${args.itemName} を飲み始めて ${periodLabel} が経ったよ。
+  const text = `${args.itemName} を飲み始めて ${periodLabel} が経過しました。
 
-「効いてる気がする」「変わらない」「合わないかも」— どれでも OK。
-1 分で記録しておくと、後で続けるかやめるかの判断材料になる。
+「効いている気がする」「変わらない」「合わないかも」— どれでも構いません。
+1 分で記録しておくと、後で続けるか様子を見るかの判断材料になります。
 
 ▼ 記録する
 https://app.sup-app.org/my-stack
@@ -72,7 +72,7 @@ https://app.sup-app.org/my-stack
 — Sup. App
 
 
-このメールが不要な場合、Sup. App でこのサプリの登録を解除するか、
+このメールが不要な場合、Sup. App でこのサプリの登録を解除いただくか、
 本メールに「unsubscribe」と返信してください。`;
 
   const html = `<!DOCTYPE html>
@@ -92,11 +92,11 @@ https://app.sup-app.org/my-stack
                 ${periodLabel} 経過
               </div>
               <h1 style="font-size:24px;font-weight:800;line-height:1.4;letter-spacing:-0.02em;margin:0 0 14px;">
-                ${args.itemName}、<br>飲み始めて ${periodLabel} だね。
+                ${args.itemName}、<br>飲み始めて ${periodLabel} が経過しました。
               </h1>
               <p style="font-size:14px;color:#5a5a5a;line-height:1.85;margin:0 0 24px;">
-                体感どう?「効いてる気がする」「変わらない」「合わないかも」<br>
-                — どれでも 1 分で残しとくと、後で続けるかやめるかの判断材料になる。
+                体感はいかがですか?「効いている気がする」「変わらない」「合わないかも」<br>
+                — どれでも 1 分で残していただくと、続けるか様子を見るかの判断材料になります。
               </p>
               <a href="https://app.sup-app.org/my-stack" style="display:inline-block;background:#0f5b3e;color:white;text-decoration:none;padding:13px 26px;border-radius:10px;font-size:14px;font-weight:700;">
                 記録する

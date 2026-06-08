@@ -43,7 +43,7 @@ export default function WelcomePanel({
           marginBottom: 8
         }}
       >
-        最適化スコアを出すまで、3 ステップ。
+        最適化スコアを出すまで、3 ステップです。
       </h2>
       <p
         style={{
@@ -53,7 +53,7 @@ export default function WelcomePanel({
           marginBottom: 20
         }}
       >
-        どれも 1 分で終わる。完了するとこのパネルは自動で消える。
+        どれも 1 分で終わります。完了するとこのパネルは自動で消えます。
       </p>
 
       <div
@@ -66,16 +66,16 @@ export default function WelcomePanel({
         <Step
           number="1"
           title="目的(TARGET)を選ぶ"
-          description="集中力 / 回復 / 安定 / 印象 / 数値改善 から複数選択可。下の TARGET セクションでチップを押すだけ。"
+          description="集中力 / 回復 / 安定 / 印象 / 数値改善 から複数選択できます。下の TARGET セクションでチップを押してください。"
           done={hasTargets}
         />
         <Step
           number="2"
-          title="飲んでるサプリを登録"
+          title="飲んでいるサプリを登録"
           description={
             hasTargets || hasItems
-              ? '「+ 新しいサプリを追加」から手動入力、または診断結果から一括取り込み'
-              : 'まだ何も飲んでないなら、まず無料診断で「何を飲むべきか」を出してから取り込む流れがオススメ'
+              ? '「+ 新しいサプリを追加」から手動入力、または診断結果から一括取り込みできます。'
+              : 'まだ何も飲んでいない場合、まず無料診断で「何を飲むべきか」を出してから取り込む流れをおすすめします。'
           }
           done={hasItems}
           actions={
@@ -88,7 +88,7 @@ export default function WelcomePanel({
                     external: true
                   },
                   {
-                    label: 'すでに飲んでる(下のフォームへ)',
+                    label: 'すでに飲んでいる(下のフォームへ)',
                     href: '#add-form',
                     primary: false
                   }
@@ -99,7 +99,7 @@ export default function WelcomePanel({
         <Step
           number="3"
           title="Optimization Score を確認"
-          description="登録が済むと、7軸でスコアが算定される。改善案も自動で出る(Pro なら内訳もフル表示)。"
+          description="登録が済むと、8軸でスコアが算定されます。改善案も自動で出ます(Pro なら内訳もフル表示されます)。"
           done={hasTargets && hasItems}
         />
       </div>

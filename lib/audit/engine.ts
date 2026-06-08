@@ -70,7 +70,7 @@ function checkDuplicates(
       title: `${ing.name_ja} が ${groupedItems.length}本 に重複`,
       description: `${groupedItems
         .map((i) => `「${i.name}」`)
-        .join(' と ')} に同じ成分(${ing.name_ja})が入ってる可能性。合計量を確認、過剰摂取になってないか見てみて。${ing.upper_limit_note ?? ''}`,
+        .join(' と ')} に同じ成分(${ing.name_ja})が入っている可能性があります。合計量をご確認いただき、過剰摂取になっていないかをチェックしてみてください。${ing.upper_limit_note ?? ''}`,
       related_item_ids: groupedItems.map((i) => i.id)
     });
   }
@@ -161,7 +161,7 @@ function checkTiming(items: StackItem[]): AuditFinding[] {
       severity: 'info',
       title: `朝に${morningCount}本集中してる`,
       description:
-        '朝にまとめて飲むのは続けやすい反面、吸収効率や胃腸負担で損するケースも。脂溶性(VD・VE・オメガ3・CoQ10)は食事と、空腹時に効くもの(L-チロシン・αリポ酸・NMN)は朝食前、他は分散を検討してみて。',
+        '朝にまとめて飲むのは続けやすい反面、吸収効率や胃腸負担で損するケースもあります。脂溶性(VD・VE・オメガ3・CoQ10)は食事と一緒に、空腹時に効くもの(L-チロシン・αリポ酸・NMN)は朝食前、その他は分散をご検討ください。',
       related_item_ids: buckets.morning.map((i) => i.id)
     });
   }
@@ -185,7 +185,7 @@ function generalTips(
       severity: 'info',
       title: '登録されたサプリの成分を判別できませんでした',
       description:
-        '商品名に成分名が含まれてないと判別できません。フォームの「✦ 成分を AI で推測」ボタンで AI に成分を抽出させるか、商品名に成分名を併記してみて(例:「オキシカット (カフェイン Lカルニチン)」)。'
+        '商品名に成分名が含まれていないと判別できません。フォームの「✦ 成分を AI で推測」ボタンで AI に成分を抽出させるか、商品名に成分名をご併記ください(例:「オキシカット (カフェイン Lカルニチン)」)。'
     });
   }
   return findings;

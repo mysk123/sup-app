@@ -114,7 +114,7 @@ export default function StackItemsList({
             marginBottom: 18
           }}
         >
-          始め方はどっちでもOK。下から選んで。
+          始め方はどちらでも結構です。下からお選びください。
         </div>
         <div
           style={{
@@ -159,7 +159,7 @@ export default function StackItemsList({
               fontWeight: 700
             }}
           >
-            すでに飲んでるものを登録
+            すでに飲んでいるものを登録
           </a>
         </div>
       </div>

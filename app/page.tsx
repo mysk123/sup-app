@@ -106,9 +106,9 @@ export default async function Home() {
           }}
         >
           重複・干渉・シナジー欠落・タイミングのズレ。
-          飲んでるサプリの「最適化スコア」を 0–100 で可視化。
-          AI が改善案を提案します。考える・書く・作るのパフォーマンスを、
-          サプリで底上げする人のためのアプリ。
+          飲んでいるサプリの「最適化スコア」を 0–100 で可視化します。
+          AI が改善案をご提案します。考える・書く・作るのパフォーマンスを、
+          サプリで底上げしたい方のためのアプリです。
         </p>
         <div
           style={{
@@ -155,7 +155,7 @@ export default async function Home() {
           >
             {user
               ? 'My Stack を開く'
-              : 'すでに飲んでる人はログイン'}
+              : 'すでに飲んでいる方はログイン'}
           </a>
         </div>
         <div
@@ -171,15 +171,15 @@ export default async function Home() {
         >
           <span>
             <span style={{ color: 'var(--accent)', fontWeight: 700 }}>✓</span>{' '}
-            診断は完全無料・5分で完了
+            診断は完全無料・5分で完了します
           </span>
           <span>
             <span style={{ color: 'var(--accent)', fontWeight: 700 }}>✓</span>{' '}
-            登録不要で始められる
+            登録不要で始められます
           </span>
           <span>
             <span style={{ color: 'var(--accent)', fontWeight: 700 }}>✓</span>{' '}
-            結果はそのまま My Stack に送れる
+            結果はそのまま My Stack に送れます
           </span>
         </div>
       </section>
@@ -197,7 +197,7 @@ export default async function Home() {
             maxWidth: 640
           }}
         >
-          飲んでるけど、これが正解か分からない。
+飲んでいるけれど、これが正解か分かりません。
         </h2>
         <div
           style={{

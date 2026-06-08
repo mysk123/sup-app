@@ -197,8 +197,7 @@ export default async function MyStackPage() {
             lineHeight: 1.75
           }}
         >
-          現在の服用記録。重複・干渉チェック(Phase 3)、リマインダー(Phase 4)
-          で活用していく。
+          現在の服用記録です。重複・干渉チェック、振り返り(+1週/+3週)、Optimization Score の算定に活用されます。
         </p>
       </div>
 
