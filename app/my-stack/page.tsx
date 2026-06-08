@@ -136,7 +136,7 @@ export default async function MyStackPage() {
               fontWeight: 700
             }}
           >
-            TRENDS →
+            PREMIUM COLUMN →
           </a>
           <span
             style={{ fontSize: 12, color: 'var(--text-sub)' }}

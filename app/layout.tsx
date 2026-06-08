@@ -56,7 +56,7 @@ function Footer() {
           href="/trends"
           style={{ color: 'var(--text-sub)', textDecoration: 'none' }}
         >
-          トレンド
+          Premium Column
         </a>
         <a
           href="/terms"

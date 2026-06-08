@@ -27,9 +27,9 @@ type Trend = {
 };
 
 const TYPE_LABELS: Record<Trend['trend_type'], string> = {
-  sns_buzz: 'SNS BUZZ',
-  celebrity: 'CELEBRITY STACK',
-  research: 'RESEARCH'
+  sns_buzz: 'SNS / MARKET',
+  celebrity: 'EXPERT STACK',
+  research: 'DEEP DIVE'
 };
 
 export default async function TrendsPage() {
@@ -102,27 +102,27 @@ export default async function TrendsPage() {
         />
       )}
 
-      {otherByType.sns_buzz.length > 0 && (
+      {otherByType.research.length > 0 && (
         <Section
-          label="SNS BUZZ"
-          subLabel="TikTok / X / Instagram でバズり中"
-          trends={otherByType.sns_buzz}
+          label="DEEP DIVE"
+          subLabel="月刊特集 / 成分の総合ガイド"
+          trends={otherByType.research}
         />
       )}
 
       {otherByType.celebrity.length > 0 && (
         <Section
-          label="CELEBRITY STACK"
-          subLabel="本人公表ベースの公開情報"
+          label="EXPERT STACK"
+          subLabel="専門家・著名人の公開スタック"
           trends={otherByType.celebrity}
         />
       )}
 
-      {otherByType.research.length > 0 && (
+      {otherByType.sns_buzz.length > 0 && (
         <Section
-          label="RESEARCH"
-          subLabel="最新研究・論文ベース"
-          trends={otherByType.research}
+          label="SNS / MARKET"
+          subLabel="SNS・市場動向"
+          trends={otherByType.sns_buzz}
         />
       )}
 
@@ -201,7 +201,7 @@ function PageHeader() {
           fontWeight: 700
         }}
       >
-        TRENDS — 月次キュレーション
+        PREMIUM COLUMN — 月刊読み物
       </div>
       <h1
         style={{
@@ -212,7 +212,7 @@ function PageHeader() {
           marginBottom: 12
         }}
       >
-        いま、SNSで何が動いているか。
+        サプリを「続ける」ための、月刊読み物。
       </h1>
       <p
         style={{
@@ -223,9 +223,9 @@ function PageHeader() {
           maxWidth: 540
         }}
       >
-        TikTok / X / 海外 podcast でいまバズってるサプリ、
-        芸能人やトップアスリートが公表しているスタック、
-        最新の研究データ。あなたの target に合うものから順に表示します。
+        月刊特集の深掘り記事、研究ベースの解説、成分の総合ガイド、
+        SNS/専門家の最新動向。考えながらサプリを選ぶための、
+        じっくり読める知の蓄積を月初にお届けします。
       </p>
     </>
   );

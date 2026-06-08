@@ -59,7 +59,7 @@ export default function TrendsUpgradeCTA() {
           marginBottom: 12
         }}
       >
-        SNSトレンド と Celebrity Stack は Pro 限定
+        Premium Column は Pro 限定
       </h2>
       <p
         style={{
@@ -70,10 +70,10 @@ export default function TrendsUpgradeCTA() {
           maxWidth: 540
         }}
       >
-        TikTok / X / 海外 podcast でいまバズってるサプリ、
-        芸能人やトップアスリートの公開スタック、最新研究データを
-        月次でキュレーションしてお届けします。あなたの target
-        に合うものから順に表示。
+        月初に届く、深掘りの読み物。
+        月刊特集 / 成分の総合ガイド / 専門家の公開スタック /
+        SNS と市場の動向。あなたの target に合うものから順に
+        並びます。
       </p>
 
       <ul
@@ -87,9 +87,9 @@ export default function TrendsUpgradeCTA() {
         }}
       >
         {[
-          'SNS BUZZ — TikTok / X / Instagram の最新バズ',
-          'CELEBRITY STACK — アスリート・クリエイターの公開スタック',
-          'RESEARCH — 最新研究・論文ベースの解説',
+          'DEEP DIVE — 月刊特集と成分の総合ガイド(各 1000-2000字)',
+          'EXPERT STACK — 専門家・著名人の公開スタック',
+          'SNS / MARKET — 動向と購買インサイト',
           'あなたの target に合うものを優先表示',
           '気になる商品はワンクリックで My Stack に追加'
         ].map((f, i) => (
