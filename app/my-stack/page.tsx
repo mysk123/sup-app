@@ -92,74 +92,103 @@ export default async function MyStackPage() {
 
   return (
     <div className="container" style={{ maxWidth: 720 }}>
-      {/* ヘッダー(brand + login state) */}
+      {/* ヘッダー(brand + login state)— 2段組でスマホでも崩れない */}
       <header
         style={{
           display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          marginBottom: 48,
+          flexDirection: 'column',
+          gap: 8,
+          marginBottom: 36,
           paddingBottom: 16,
           borderBottom: '1px solid var(--border)'
         }}
       >
-        <a href="/" style={{ textDecoration: 'none', color: 'inherit' }}>
-          <span
-            style={{
-              fontWeight: 700,
-              fontSize: 20,
-              letterSpacing: '-0.02em'
-            }}
-          >
-            Sup<span style={{ color: 'var(--accent)' }}>.</span>
+        {/* 上段: ロゴ + メニュー */}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 8
+          }}
+        >
+          <a href="/" style={{ textDecoration: 'none', color: 'inherit' }}>
             <span
               style={{
-                marginLeft: 6,
-                fontSize: 11,
-                color: 'var(--text-sub)',
-                fontWeight: 600
+                fontWeight: 700,
+                fontSize: 20,
+                letterSpacing: '-0.02em'
               }}
             >
-              App
+              Sup<span style={{ color: 'var(--accent)' }}>.</span>
+              <span
+                style={{
+                  marginLeft: 6,
+                  fontSize: 11,
+                  color: 'var(--text-sub)',
+                  fontWeight: 600
+                }}
+              >
+                App
+              </span>
             </span>
-          </span>
-        </a>
-        <div
-          style={{ display: 'flex', alignItems: 'center', gap: 14 }}
-        >
-          <a
-            href="/trends"
+          </a>
+          <div
             style={{
-              fontSize: 12,
-              color: 'var(--accent)',
-              textDecoration: 'none',
-              fontWeight: 700
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6
             }}
           >
-            PREMIUM COLUMN →
-          </a>
-          <span
-            style={{ fontSize: 12, color: 'var(--text-sub)' }}
-          >
-            {user.email}
-          </span>
-          <form action="/auth/logout" method="POST">
-            <button
-              type="submit"
+            <a
+              href="/trends"
               style={{
-                fontSize: 12,
-                background: 'transparent',
-                color: 'var(--text-sub)',
-                border: '1px solid var(--border)',
+                fontSize: 11,
+                fontWeight: 700,
+                color: 'var(--accent-dark)',
+                background: 'var(--accent-light)',
+                textDecoration: 'none',
                 padding: '6px 12px',
-                borderRadius: 8,
-                cursor: 'pointer',
-                fontFamily: 'inherit'
+                borderRadius: 100,
+                whiteSpace: 'nowrap'
               }}
             >
-              ログアウト
-            </button>
-          </form>
+              ★ Column
+            </a>
+            <form action="/auth/logout" method="POST">
+              <button
+                type="submit"
+                title="ログアウト"
+                aria-label="ログアウト"
+                style={{
+                  fontSize: 11,
+                  background: 'transparent',
+                  color: 'var(--text-sub)',
+                  border: '1px solid var(--border)',
+                  padding: '6px 12px',
+                  borderRadius: 100,
+                  cursor: 'pointer',
+                  fontFamily: 'inherit',
+                  whiteSpace: 'nowrap'
+                }}
+              >
+                ログアウト
+              </button>
+            </form>
+          </div>
+        </div>
+
+        {/* 下段: メアド(右寄せ、小さく) */}
+        <div
+          style={{
+            fontSize: 11,
+            color: 'var(--text-sub)',
+            textAlign: 'right',
+            opacity: 0.75,
+            wordBreak: 'break-all'
+          }}
+        >
+          {user.email}
         </div>
       </header>
 
