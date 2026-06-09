@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { auditStack, type AuditFinding } from '@/lib/audit/engine';
 import { computeScore, type Target } from '@/lib/audit/score';
 import AiAnalysisPanel from './AiAnalysisPanel';
+import AskPanel from './AskPanel';
 import AddStackItemForm from './AddStackItemForm';
 import StackItemsList, { type StackItem } from './StackItemsList';
 import TargetSelector from './TargetSelector';
@@ -201,6 +202,18 @@ export default async function MyStackPage() {
             ai_used_this_month: billing.ai_used_this_month,
             ai_limit_this_month: billing.ai_limit_this_month,
             ai_remaining: billing.ai_remaining
+          }}
+        />
+      )}
+
+      {/* AI に質問する(オープンクエスチョン) */}
+      {billing && (
+        <AskPanel
+          initialBilling={{
+            plan: billing.plan,
+            ai_question_used_this_month: billing.ai_question_used_this_month,
+            ai_question_remaining: billing.ai_question_remaining,
+            ai_limit_this_month: billing.ai_limit_this_month
           }}
         />
       )}

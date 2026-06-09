@@ -9,6 +9,7 @@ import { redirect } from 'next/navigation';
 import { getBillingStatus } from '@/lib/billing/usage';
 import { TARGET_LABELS, type Target } from '@/lib/audit/score';
 import { INGREDIENTS, type IngredientKey } from '@/lib/audit/knowledge';
+import { amazonLink, iherbLink } from '@/lib/affiliate';
 import TrendsUpgradeCTA from './TrendsUpgradeCTA';
 
 type Trend = {
@@ -372,33 +373,115 @@ function FeaturedSection({ trend }: { trend: Trend }) {
       )}
 
       {trend.related_product_name && (
+        <ProductActions
+          name={trend.related_product_name}
+          dosage={trend.related_product_dosage}
+          category={trend.category}
+        />
+      )}
+    </section>
+  );
+}
+
+function ProductActions({
+  name,
+  dosage,
+  category
+}: {
+  name: string;
+  dosage?: string | null;
+  category?: string | null;
+}) {
+  const onboardUrl = `/onboard?items=${encodeURIComponent(
+    JSON.stringify([{ name, dosage: dosage ?? '' }])
+  )}${category ? `&targets=${category}` : ''}&from=trends`;
+  const searchKeyword = name;
+
+  return (
+    <div
+      style={{
+        marginTop: 14,
+        padding: '12px 14px',
+        background: 'white',
+        border: '1px solid var(--border)',
+        borderRadius: 10
+      }}
+    >
+      <div
+        style={{
+          fontSize: 11,
+          color: 'var(--text-sub)',
+          fontWeight: 700,
+          marginBottom: 8
+        }}
+      >
+        {name}
+        {dosage && (
+          <span style={{ color: 'var(--accent)', marginLeft: 6 }}>
+            ({dosage})
+          </span>
+        )}
+      </div>
+      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
         <a
-          href={`/onboard?items=${encodeURIComponent(
-            JSON.stringify([
-              {
-                name: trend.related_product_name,
-                dosage: trend.related_product_dosage ?? ''
-              }
-            ])
-          )}${trend.category ? `&targets=${trend.category}` : ''}`}
+          href={onboardUrl}
           style={{
             display: 'inline-flex',
             alignItems: 'center',
-            gap: 6,
+            gap: 4,
             background: 'var(--accent)',
             color: 'white',
             textDecoration: 'none',
-            padding: '9px 16px',
+            padding: '7px 12px',
             borderRadius: 8,
             fontSize: 12,
-            fontWeight: 700,
-            marginTop: 6
+            fontWeight: 700
           }}
         >
-          ↗ {trend.related_product_name} を My Stack に追加
+          ↗ My Stack に追加
         </a>
-      )}
-    </section>
+        <a
+          href={iherbLink(searchKeyword)}
+          target="_blank"
+          rel="noopener"
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 4,
+            background: 'transparent',
+            color: 'var(--accent)',
+            textDecoration: 'none',
+            border: '1px solid var(--accent)',
+            padding: '6px 11px',
+            borderRadius: 8,
+            fontSize: 12,
+            fontWeight: 600
+          }}
+        >
+          iHerb で探す →
+        </a>
+        <a
+          href={amazonLink(searchKeyword)}
+          target="_blank"
+          rel="noopener"
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 4,
+            background: 'transparent',
+            color: 'var(--text-sub)',
+            textDecoration: 'none',
+            border: '1px solid var(--border)',
+            padding: '6px 11px',
+            borderRadius: 8,
+            fontSize: 12,
+            fontWeight: 600
+          }}
+        >
+          Amazon で探す →
+        </a>
+      </div>
+    </div>
   );
 }
 

@@ -6,11 +6,15 @@
  * - Free プランは月 N 回ゲート、超えたら Stripe Checkout へ誘導
  */
 import { useState } from 'react';
+import { amazonLink, iherbLink } from '@/lib/affiliate';
 
 type Recommendation = {
   title: string;
   description: string;
   priority: 'high' | 'medium' | 'low';
+  /** AI が新しいサプリの追加を提案している場合の検索キーワード(例: "L-テアニン", "アシュワガンダ KSM-66") */
+  related_product_name?: string;
+  related_product_dosage?: string;
 };
 
 type Analysis = {
@@ -618,7 +622,86 @@ function RecommendationCard({ rec }: { rec: Recommendation }) {
         }}
       >
         <div style={{ paddingTop: 12 }}>{rec.description}</div>
+        {rec.related_product_name && (
+          <RecommendationActions
+            name={rec.related_product_name}
+            dosage={rec.related_product_dosage}
+          />
+        )}
       </div>
     </details>
+  );
+}
+
+function RecommendationActions({
+  name,
+  dosage
+}: {
+  name: string;
+  dosage?: string;
+}) {
+  const onboardUrl = `/onboard?items=${encodeURIComponent(
+    JSON.stringify([{ name, dosage: dosage ?? '' }])
+  )}&from=ai_analysis`;
+  return (
+    <div
+      style={{
+        marginTop: 12,
+        paddingTop: 12,
+        borderTop: '1px dashed var(--border)',
+        display: 'flex',
+        gap: 6,
+        flexWrap: 'wrap'
+      }}
+    >
+      <a
+        href={onboardUrl}
+        style={{
+          background: 'var(--accent)',
+          color: 'white',
+          textDecoration: 'none',
+          padding: '7px 12px',
+          borderRadius: 8,
+          fontSize: 12,
+          fontWeight: 700
+        }}
+      >
+        ↗ My Stack に追加
+      </a>
+      <a
+        href={iherbLink(name)}
+        target="_blank"
+        rel="noopener"
+        style={{
+          background: 'transparent',
+          color: 'var(--accent)',
+          textDecoration: 'none',
+          border: '1px solid var(--accent)',
+          padding: '6px 11px',
+          borderRadius: 8,
+          fontSize: 12,
+          fontWeight: 600
+        }}
+      >
+        iHerb で探す →
+      </a>
+      <a
+        href={amazonLink(name)}
+        target="_blank"
+        rel="noopener"
+        style={{
+          background: 'transparent',
+          color: 'var(--text-sub)',
+          textDecoration: 'none',
+          border: '1px solid var(--border)',
+          padding: '6px 11px',
+          borderRadius: 8,
+          fontSize: 12,
+          fontWeight: 600
+        }}
+      >
+        Amazon で探す →
+      </a>
+    </div>
   );
 }

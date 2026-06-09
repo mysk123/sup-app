@@ -61,6 +61,16 @@ const ANALYSIS_SCHEMA = {
             enum: ['high', 'medium', 'low'],
             description:
               'high=今すぐ対応推奨、medium=次の購入時に検討、low=知っておくと良い'
+          },
+          related_product_name: {
+            type: 'string',
+            description:
+              '【新規サプリの追加を提案する場合のみ必須】 例: "L-テアニン", "アシュワガンダ KSM-66", "マグネシウム グリシネート"。検索キーワードとして使えるシンプルな成分・商品名。既存スタックの調整(タイミング変更・休止など)が主旨の場合は空でよい。'
+          },
+          related_product_dosage: {
+            type: 'string',
+            description:
+              '推奨用量(例: "200mg", "600mg/日")。related_product_name と組み合わせて使う。'
           }
         },
         required: ['title', 'description', 'priority'],
