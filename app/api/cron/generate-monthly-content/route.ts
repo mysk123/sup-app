@@ -35,7 +35,7 @@ const COVER_STORY_SCHEMA = {
     body: {
       type: 'string',
       description:
-        '1500-2000字の本文(マークダウン可、## 見出し OK)。研究データを引きつつ、知的生産者向けに「なぜ重要か→機序→使い方→注意点」の構成。'
+        '2500-3500字の本格的な深掘り記事。マークダウン可(## 見出し / ### サブ見出しを必ず複数入れて構造化)。各セクション 400-700字、合計 5-7 セクションで構成。引用研究の名前・年・要旨を明記。知的生産者が一杯のコーヒー時間で読み切る「重厚な読み物」のクオリティを目指す。'
     },
     category: {
       type: 'string',
@@ -120,8 +120,18 @@ const RESEARCH_DIGEST_SCHEMA = {
   additionalProperties: false
 };
 
-// Ingredient Deep Dive の SCHEMA(月刊特集と同じ形だが body の構成が違う)
-const INGREDIENT_DEEP_DIVE_SCHEMA = COVER_STORY_SCHEMA;
+// Ingredient Deep Dive の SCHEMA(成分の総合ガイド、2000-3000字)
+const INGREDIENT_DEEP_DIVE_SCHEMA = {
+  ...COVER_STORY_SCHEMA,
+  properties: {
+    ...COVER_STORY_SCHEMA.properties,
+    body: {
+      type: 'string',
+      description:
+        '2000-3000字の総合ガイド。マークダウンで構造化(## 大見出し 6-7個、各 300-500字)。1つの成分について「化学・歴史・エビデンス・用量・タイミング・副作用・干渉・シナジー・まとめ」を網羅的に解説。引用は具体的に。'
+    }
+  }
+};
 
 export async function GET(request: Request) {
   // 認証
@@ -152,29 +162,53 @@ export async function GET(request: Request) {
 
   // 1. 月刊特集
   try {
-    const coverStoryPrompt = `${monthLabel}の Sup. App 月刊特集記事を1本作成してください。
+    const coverStoryPrompt = `${monthLabel}の Sup. App 月刊特集記事を1本作成してください。これは「Premium Column」として Pro 会員に毎月お届けする、その月の目玉となる本格的な読み物です。
 
-対象読者: 知的生産者(20代後半〜30代のクリエイター・起業家・研究者)で、すでにサプリ習慣がある層。
+対象読者: 知的生産者(20代後半〜30代のクリエイター・起業家・研究者・エンジニア)で、すでにサプリ習慣があり、エビデンスを重視する層。
 
-要件:
-- タイトルは引きのあるフレーズ(40字以内)
-- 1500-2000字の深掘り読み物
-- 構成: なぜ重要か(背景・課題)→ 機序(エビデンス)→ 使い方(用量・タイミング)→ 注意点
-- 引用は公開ソース(Huberman Lab Podcast / PubMed / Andrew Attia / Peter Attia / Sinclair Lab / 主要な栄養学論文)を優先
-- 効果保証ではなく「研究で示唆されている」「使われている」という表現で
-- 知的生産者の関心(集中力 / 回復 / 思考のクオリティ)に紐づける
+# 文章の質
+- 2500-3500字の本格的な深掘り記事
+- マークダウンで構造化:## 大見出し(3-5個)+ ### サブ見出しを必ず使う
+- 各セクションは 400-700字、論理が前後で繋がること
+- 知的生産者が一杯のコーヒー時間でじっくり読み切る重厚な読み物
 
-避けるべき:
+# 推奨構成
+## ${monthLabel} のテーマ:[テーマを具体的に]
+### 1. なぜ今これに注目すべきか(社会的・科学的な背景)
+### 2. 機序の解説(分子・生理学レベル、論文ベース)
+### 3. 知的生産者に効くポイント(認知・気分・パフォーマンスへの作用)
+### 4. 実用ガイド(用量・タイミング・食事との関係)
+### 5. 注意点・干渉・副作用
+### 6. 相性のいい成分・スタック例
+### 7. まとめ:今月、何から始めるか
+
+# 引用ソース(本文中に必ず1-3件、具体的に明記)
+- Huberman Lab Podcast(エピソードの主旨を明記)
+- Peter Attia(The Drive Podcast / 著書『Outlive』)
+- David Sinclair Lab(NAD+ / 長寿研究)
+- Examine.com(サプリのエビデンスデータベース)
+- PubMed(著者・年・要旨を引いてください)
+- Mayo Clinic / NIH / NEJM(信頼性の高い解説)
+
+引用例:「Huberman は ○○ について、××年の podcast でこう述べています」「△△ら(2023)の研究では、N=○○ で○○ が示唆されました」のように具体的に。
+
+# トーン
+- 専門家として落ち着いた説明、ですます調
+- 「効きます」ではなく「研究で示唆されています」「○○ という結果が報告されています」
+- 知的生産者として「自分の判断材料が欲しい」読者の期待に応える
+
+# 避けるべきもの
 - 医療診断・治療効果の保証
-- 速報性のある「今バズってる」系の表現
-- 検証不能な噂や憶測
-- 薬機法に触れる表現
+- 速報性のある「今バズり中」系の表現
+- 検証不能な噂・憶測
+- 薬機法に触れる表現(「効く」「治る」「予防」)
+- ふわっとした内容・無難すぎる結論
 
-JSON形式で返してください。`;
+JSON形式で、指定スキーマに従って返してください。`;
 
     const response = await anthropic.messages.create({
       model: 'claude-opus-4-8',
-      max_tokens: 8192,
+      max_tokens: 16384,
       thinking: { type: 'adaptive' },
       output_config: {
         effort: 'medium',
@@ -223,7 +257,7 @@ JSON形式で返してください。`;
 
     const response = await anthropic.messages.create({
       model: 'claude-opus-4-8',
-      max_tokens: 8192,
+      max_tokens: 16384,
       thinking: { type: 'adaptive' },
       output_config: {
         effort: 'medium',
@@ -261,24 +295,63 @@ JSON形式で返してください。`;
 
   // 3. Ingredient Deep Dive
   try {
-    const ingredientPrompt = `${monthLabel}の Ingredient Deep Dive を 1件作成してください。
+    const ingredientPrompt = `${monthLabel}の Ingredient Deep Dive を1件作成してください。これは1つの成分を多面的に総合解説する、読み応えのあるリファレンス記事です。
 
-1つの成分を選んで(過去の月とは別の成分、できれば「Magnesium / L-Theanine / Lions Mane / Ashwagandha / Omega-3 / VD3+K2 / Alpha-GPC / Berberine / Glycine / NMN / NAC」のいずれか)、1000-1500字で総合解説。
+# 成分の選定
+1つの成分を選んでください(過去の月とは別の成分、推奨候補:
+Magnesium Glycinate / L-Theanine / Lions Mane / Ashwagandha (KSM-66) / Omega-3 EPA・DHA /
+Vitamin D3 + K2 / Alpha-GPC / Bacopa Monnieri / L-Tyrosine / Berberine / Glycine /
+NMN / NAC / Curcumin / Rhodiola / Creatine Monohydrate / CoQ10 + PQQ)
 
-構成:
-1. この成分の概要(機序・主要な研究背景)
-2. 期待される効果と研究エビデンス
-3. 推奨用量・タイミング(食事との関係も)
-4. 副作用・干渉・注意点
-5. おすすめの組み合わせ(シナジーペア)
+# 文章の質
+- 2000-3000字の本格的な総合ガイド
+- マークダウンで構造化:## 大見出し(6-7個)を必ず使う
+- 各セクション 300-500字
+- ガイドとして「この成分について知りたい全てが書かれている」レベル
 
-引用は公開ソース。
+# 推奨構成
+## [成分名]とは何か
+### 化学構造と分類(キレート形 / 結合形などの違いも)
+### なぜ注目されているか(歴史的背景・近年の研究の進展)
+
+## エビデンス
+### 主要な研究と結果(著者・年・N数・結論を具体的に)
+### 効果実感までの期間(○週間 / ○ヶ月)
+### 個人差が出る要因
+
+## 実用ガイド
+### 推奨用量(成人男女別、初心者と慣れた人で異なれば明記)
+### タイミング(朝 / 夕 / 就寝前)と食事との関係
+### 形状の選び方(キレート / 結合形 / 徐放性 など)
+
+## 注意点と副作用
+### よくある副作用(用量別、頻度)
+### 医薬品との相互作用(SSRI / 抗凝固薬 / 甲状腺薬など、該当成分があれば)
+### 服用を避けるべき人(妊娠中・腎機能低下・服薬中など)
+
+## シナジー・相乗効果
+### 一緒に摂ると効くペア(科学的根拠とともに)
+### 逆に同時摂取を避けるべきペア
+
+## まとめ:こんな人におすすめ
+
+# 引用ソース
+- Examine.com(エビデンスサマリー)
+- PubMed(具体的な論文)
+- Huberman Lab / Peter Attia などの podcast
+
+引用は本文中に具体的に明記してください(著者・年など)。
+
+# トーン
+- 専門家として落ち着いた説明、ですます調
+- 客観的なエビデンスベース
+- 「効く」断言ではなく「研究で示唆されています」
 
 JSON形式で返してください。`;
 
     const response = await anthropic.messages.create({
       model: 'claude-opus-4-8',
-      max_tokens: 8192,
+      max_tokens: 16384,
       thinking: { type: 'adaptive' },
       output_config: {
         effort: 'medium',

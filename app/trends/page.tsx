@@ -71,19 +71,34 @@ export default async function TrendsPage() {
 
   const trends: Trend[] = (trendsRaw ?? []) as Trend[];
 
+  // body 付き(長文記事)を最新1件 = FEATURED
+  const featured = trends.find((t) => t.body && t.body.length > 1000);
+
   // user の target にマッチする trends と、それ以外
   const forYou = trends.filter(
-    (t) => t.category && userTargets.includes(t.category as Target)
+    (t) =>
+      t.category &&
+      userTargets.includes(t.category as Target) &&
+      t.id !== featured?.id
   );
   const otherByType = {
     sns_buzz: trends.filter(
-      (t) => t.trend_type === 'sns_buzz' && !forYou.includes(t)
+      (t) =>
+        t.trend_type === 'sns_buzz' &&
+        !forYou.includes(t) &&
+        t.id !== featured?.id
     ),
     celebrity: trends.filter(
-      (t) => t.trend_type === 'celebrity' && !forYou.includes(t)
+      (t) =>
+        t.trend_type === 'celebrity' &&
+        !forYou.includes(t) &&
+        t.id !== featured?.id
     ),
     research: trends.filter(
-      (t) => t.trend_type === 'research' && !forYou.includes(t)
+      (t) =>
+        t.trend_type === 'research' &&
+        !forYou.includes(t) &&
+        t.id !== featured?.id
     )
   };
 
@@ -93,6 +108,8 @@ export default async function TrendsPage() {
       style={{ maxWidth: 720, padding: '40px 20px' }}
     >
       <PageHeader />
+
+      {featured && <FeaturedSection trend={featured} />}
 
       {forYou.length > 0 && (
         <Section
@@ -228,6 +245,160 @@ function PageHeader() {
         じっくり読める知の蓄積を月初にお届けします。
       </p>
     </>
+  );
+}
+
+function FeaturedSection({ trend }: { trend: Trend }) {
+  const categoryLabel =
+    trend.category && TARGET_LABELS[trend.category as Target];
+
+  return (
+    <section
+      style={{
+        marginBottom: 40,
+        background:
+          'linear-gradient(135deg, var(--accent-light) 0%, var(--card-bg) 100%)',
+        border: '1px solid rgba(15, 91, 62, 0.2)',
+        borderRadius: 16,
+        padding: '24px 24px 28px',
+        position: 'relative',
+        overflow: 'hidden'
+      }}
+    >
+      <div
+        style={{
+          fontSize: 10,
+          fontFamily: 'Inter, sans-serif',
+          letterSpacing: '0.2em',
+          fontWeight: 700,
+          color: 'var(--accent-dark)',
+          marginBottom: 12,
+          display: 'inline-block',
+          padding: '4px 10px',
+          background: 'rgba(255,255,255,0.7)',
+          borderRadius: 100
+        }}
+      >
+        ★ FEATURED / 月の特集
+      </div>
+      {categoryLabel && (
+        <div
+          style={{
+            fontSize: 12,
+            color: 'var(--text-sub)',
+            fontWeight: 600,
+            marginBottom: 4
+          }}
+        >
+          {categoryLabel}
+        </div>
+      )}
+      <h2
+        style={{
+          fontSize: 26,
+          fontWeight: 800,
+          lineHeight: 1.35,
+          letterSpacing: '-0.025em',
+          marginBottom: 12,
+          color: 'var(--text-main)'
+        }}
+      >
+        {trend.title}
+      </h2>
+      <p
+        style={{
+          fontSize: 14,
+          color: 'var(--text-sub)',
+          lineHeight: 1.85,
+          marginBottom: 18
+        }}
+      >
+        {trend.description}
+      </p>
+
+      {trend.body && (
+        <details
+          style={{
+            background: 'white',
+            border: '1px solid var(--border)',
+            borderRadius: 12,
+            padding: '14px 18px',
+            marginBottom: 14
+          }}
+        >
+          <summary
+            style={{
+              cursor: 'pointer',
+              listStyle: 'none',
+              userSelect: 'none',
+              fontSize: 13,
+              fontWeight: 700,
+              color: 'var(--accent)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6
+            }}
+          >
+            ▾ 本文を読む(約{Math.round(trend.body.length / 100) * 100}字)
+          </summary>
+          <div
+            style={{
+              marginTop: 16,
+              paddingTop: 16,
+              borderTop: '1px solid var(--border)',
+              fontSize: 14,
+              lineHeight: 2,
+              whiteSpace: 'pre-wrap',
+              color: 'var(--text-main)'
+            }}
+          >
+            {trend.body}
+          </div>
+        </details>
+      )}
+
+      {trend.source_url && (
+        <div style={{ fontSize: 12, marginBottom: 10 }}>
+          <span style={{ color: 'var(--text-sub)' }}>ソース: </span>
+          <a
+            href={trend.source_url}
+            target="_blank"
+            rel="noopener"
+            style={{ color: 'var(--accent)' }}
+          >
+            {trend.source_label ?? trend.source_url}
+          </a>
+        </div>
+      )}
+
+      {trend.related_product_name && (
+        <a
+          href={`/onboard?items=${encodeURIComponent(
+            JSON.stringify([
+              {
+                name: trend.related_product_name,
+                dosage: trend.related_product_dosage ?? ''
+              }
+            ])
+          )}${trend.category ? `&targets=${trend.category}` : ''}`}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 6,
+            background: 'var(--accent)',
+            color: 'white',
+            textDecoration: 'none',
+            padding: '9px 16px',
+            borderRadius: 8,
+            fontSize: 12,
+            fontWeight: 700,
+            marginTop: 6
+          }}
+        >
+          ↗ {trend.related_product_name} を My Stack に追加
+        </a>
+      )}
+    </section>
   );
 }
 
