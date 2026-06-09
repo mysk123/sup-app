@@ -4,8 +4,12 @@
  * スタック一覧 (Client Component)
  * useOptimistic でボタン押下時に即座に UI が反応するようにする
  */
-import { useOptimistic, useTransition } from 'react';
-import { deleteStackItem, toggleActiveStackItem } from './actions';
+import { useOptimistic, useState, useTransition } from 'react';
+import {
+  deleteStackItem,
+  toggleActiveStackItem,
+  updateStackItem
+} from './actions';
 import {
   MonitoringBadge,
   MonitoringForm,
@@ -15,6 +19,14 @@ import type {
   MonitoringPrompt,
   MonitoringResponse
 } from '@/lib/monitoring/types';
+
+const TIMING_LABELS_INLINE: Record<string, string> = {
+  morning: '朝',
+  lunch: '昼',
+  evening: '夕',
+  bedtime: '就寝前',
+  as_needed: '頓服'
+};
 
 const TIMING_LABELS: Record<string, string> = {
   morning: '朝',
@@ -225,6 +237,7 @@ export default function StackItemsList({
               )}
             </div>
             <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+              <EditButton item={item} />
               <button
                 type="button"
                 onClick={() => handleToggle(item.id, item.is_active)}
@@ -344,6 +357,305 @@ export default function StackItemsList({
         </div>
       );
       })}
+    </div>
+  );
+}
+
+function EditButton({ item }: { item: StackItem }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        title="編集"
+        style={{
+          background: 'transparent',
+          border: '1px solid var(--border)',
+          padding: '5px 10px',
+          borderRadius: 6,
+          fontSize: 11,
+          cursor: 'pointer',
+          color: 'var(--text-sub)',
+          fontFamily: 'inherit'
+        }}
+      >
+        編集
+      </button>
+      {open && <EditDialog item={item} onClose={() => setOpen(false)} />}
+    </>
+  );
+}
+
+function EditDialog({
+  item,
+  onClose
+}: {
+  item: StackItem;
+  onClose: () => void;
+}) {
+  const [name, setName] = useState(item.name);
+  const [brand, setBrand] = useState(item.brand ?? '');
+  const [dosage, setDosage] = useState(item.dosage ?? '');
+  const [notes, setNotes] = useState(item.notes ?? '');
+  const [detectedIngredients, setDetectedIngredients] = useState(
+    item.detected_ingredients ?? ''
+  );
+  const [timing, setTiming] = useState<string[]>(item.timing ?? []);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  function toggleTiming(key: string) {
+    setTiming((prev) =>
+      prev.includes(key) ? prev.filter((t) => t !== key) : [...prev, key]
+    );
+  }
+
+  async function handleSave() {
+    if (!name.trim()) {
+      setError('サプリ名は必須です');
+      return;
+    }
+    setSaving(true);
+    setError(null);
+    const res = await updateStackItem({
+      id: item.id,
+      name,
+      brand,
+      dosage,
+      notes,
+      timing,
+      detected_ingredients: detectedIngredients
+    });
+    if (res?.error) {
+      setError(res.error);
+      setSaving(false);
+    } else {
+      onClose();
+    }
+  }
+
+  return (
+    <div
+      onClick={onClose}
+      style={{
+        position: 'fixed',
+        inset: 0,
+        background: 'rgba(0,0,0,0.4)',
+        zIndex: 200,
+        display: 'flex',
+        alignItems: 'flex-start',
+        justifyContent: 'center',
+        padding: '40px 16px',
+        overflowY: 'auto'
+      }}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          background: 'white',
+          borderRadius: 14,
+          padding: '24px 24px 22px',
+          maxWidth: 520,
+          width: '100%',
+          maxHeight: 'calc(100vh - 80px)',
+          overflowY: 'auto'
+        }}
+      >
+        <div
+          style={{
+            fontSize: 11,
+            fontFamily: 'Inter, sans-serif',
+            letterSpacing: '0.15em',
+            color: 'var(--accent)',
+            marginBottom: 10,
+            fontWeight: 700
+          }}
+        >
+          EDIT
+        </div>
+        <h2
+          style={{
+            fontSize: 20,
+            fontWeight: 800,
+            letterSpacing: '-0.02em',
+            marginBottom: 18
+          }}
+        >
+          サプリを編集
+        </h2>
+
+        <Field label="サプリ名" required>
+          <input
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            style={inputStyle}
+          />
+        </Field>
+        <Field label="ブランド">
+          <input
+            type="text"
+            value={brand}
+            onChange={(e) => setBrand(e.target.value)}
+            style={inputStyle}
+          />
+        </Field>
+        <Field label="用量・1日の量">
+          <input
+            type="text"
+            value={dosage}
+            onChange={(e) => setDosage(e.target.value)}
+            style={inputStyle}
+          />
+        </Field>
+
+        <Field label="タイミング(複数選択可)">
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+            {Object.entries(TIMING_LABELS_INLINE).map(([key, label]) => {
+              const active = timing.includes(key);
+              return (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => toggleTiming(key)}
+                  style={{
+                    padding: '6px 12px',
+                    background: active ? 'var(--accent)' : 'transparent',
+                    color: active ? 'white' : 'var(--text-main)',
+                    border: `1px solid ${active ? 'var(--accent)' : 'var(--border)'}`,
+                    borderRadius: 100,
+                    fontSize: 12,
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    fontFamily: 'inherit'
+                  }}
+                >
+                  {active ? '✓ ' : ''}
+                  {label}
+                </button>
+              );
+            })}
+          </div>
+        </Field>
+
+        <Field label="検出された成分(AI 推測)">
+          <input
+            type="text"
+            value={detectedIngredients}
+            onChange={(e) => setDetectedIngredients(e.target.value)}
+            placeholder="例: カフェイン, Lカルニチン, ガルシニア"
+            style={inputStyle}
+          />
+        </Field>
+
+        <Field label="メモ">
+          <textarea
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            rows={2}
+            style={{
+              ...inputStyle,
+              resize: 'vertical',
+              fontFamily: 'inherit'
+            }}
+          />
+        </Field>
+
+        {error && (
+          <div
+            style={{
+              padding: '10px 12px',
+              background: '#fef2f2',
+              border: '1px solid #fecaca',
+              color: '#991b1b',
+              borderRadius: 8,
+              fontSize: 12,
+              marginBottom: 12
+            }}
+          >
+            {error}
+          </div>
+        )}
+
+        <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+          <button
+            type="button"
+            onClick={handleSave}
+            disabled={saving}
+            style={{
+              background: 'var(--accent)',
+              color: 'white',
+              border: 'none',
+              padding: '10px 20px',
+              borderRadius: 10,
+              fontSize: 14,
+              fontWeight: 700,
+              cursor: saving ? 'wait' : 'pointer',
+              fontFamily: 'inherit',
+              opacity: saving ? 0.7 : 1
+            }}
+          >
+            {saving ? '保存中…' : '保存する'}
+          </button>
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={saving}
+            style={{
+              background: 'transparent',
+              color: 'var(--text-sub)',
+              border: '1px solid var(--border)',
+              padding: '9px 18px',
+              borderRadius: 10,
+              fontSize: 13,
+              cursor: 'pointer',
+              fontFamily: 'inherit'
+            }}
+          >
+            キャンセル
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const inputStyle: React.CSSProperties = {
+  width: '100%',
+  padding: '10px 12px',
+  border: '1px solid var(--border)',
+  borderRadius: 8,
+  fontSize: 14,
+  fontFamily: 'inherit'
+};
+
+function Field({
+  label,
+  required,
+  children
+}: {
+  label: string;
+  required?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <div style={{ marginBottom: 14 }}>
+      <label
+        style={{
+          display: 'block',
+          fontSize: 12,
+          color: 'var(--text-sub)',
+          marginBottom: 6,
+          fontWeight: 600
+        }}
+      >
+        {label}
+        {required && (
+          <span style={{ color: 'var(--accent)', marginLeft: 4 }}>*</span>
+        )}
+      </label>
+      {children}
     </div>
   );
 }

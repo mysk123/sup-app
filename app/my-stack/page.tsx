@@ -8,6 +8,7 @@ import StackItemsList, { type StackItem } from './StackItemsList';
 import TargetSelector from './TargetSelector';
 import ScorePanel from './ScorePanel';
 import WelcomePanel from './WelcomePanel';
+import HeaderMenu from './HeaderMenu';
 import { getBillingStatus } from '@/lib/billing/usage';
 
 export default async function MyStackPage() {
@@ -92,104 +93,46 @@ export default async function MyStackPage() {
 
   return (
     <div className="container" style={{ maxWidth: 720 }}>
-      {/* ヘッダー(brand + login state)— 2段組でスマホでも崩れない */}
+      {/* ヘッダー — 左上に折りたたみメニュー + 右にロゴ */}
       <header
         style={{
           display: 'flex',
-          flexDirection: 'column',
-          gap: 8,
-          marginBottom: 36,
-          paddingBottom: 16,
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 12,
+          marginBottom: 32,
+          paddingBottom: 14,
           borderBottom: '1px solid var(--border)'
         }}
       >
-        {/* 上段: ロゴ + メニュー */}
-        <div
+        <HeaderMenu email={user.email ?? ''} />
+        <a
+          href="/"
           style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: 8
+            textDecoration: 'none',
+            color: 'inherit'
           }}
         >
-          <a href="/" style={{ textDecoration: 'none', color: 'inherit' }}>
-            <span
-              style={{
-                fontWeight: 700,
-                fontSize: 20,
-                letterSpacing: '-0.02em'
-              }}
-            >
-              Sup<span style={{ color: 'var(--accent)' }}>.</span>
-              <span
-                style={{
-                  marginLeft: 6,
-                  fontSize: 11,
-                  color: 'var(--text-sub)',
-                  fontWeight: 600
-                }}
-              >
-                App
-              </span>
-            </span>
-          </a>
-          <div
+          <span
             style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 6
+              fontWeight: 700,
+              fontSize: 20,
+              letterSpacing: '-0.02em'
             }}
           >
-            <a
-              href="/trends"
+            Sup<span style={{ color: 'var(--accent)' }}>.</span>
+            <span
               style={{
+                marginLeft: 6,
                 fontSize: 11,
-                fontWeight: 700,
-                color: 'var(--accent-dark)',
-                background: 'var(--accent-light)',
-                textDecoration: 'none',
-                padding: '6px 12px',
-                borderRadius: 100,
-                whiteSpace: 'nowrap'
+                color: 'var(--text-sub)',
+                fontWeight: 600
               }}
             >
-              ★ Column
-            </a>
-            <form action="/auth/logout" method="POST">
-              <button
-                type="submit"
-                title="ログアウト"
-                aria-label="ログアウト"
-                style={{
-                  fontSize: 11,
-                  background: 'transparent',
-                  color: 'var(--text-sub)',
-                  border: '1px solid var(--border)',
-                  padding: '6px 12px',
-                  borderRadius: 100,
-                  cursor: 'pointer',
-                  fontFamily: 'inherit',
-                  whiteSpace: 'nowrap'
-                }}
-              >
-                ログアウト
-              </button>
-            </form>
-          </div>
-        </div>
-
-        {/* 下段: メアド(右寄せ、小さく) */}
-        <div
-          style={{
-            fontSize: 11,
-            color: 'var(--text-sub)',
-            textAlign: 'right',
-            opacity: 0.75,
-            wordBreak: 'break-all'
-          }}
-        >
-          {user.email}
-        </div>
+              App
+            </span>
+          </span>
+        </a>
       </header>
 
       <div style={{ marginBottom: 36 }}>

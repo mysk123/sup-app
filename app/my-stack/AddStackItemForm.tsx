@@ -4,8 +4,9 @@
  * サプリ追加フォーム(Client Component)
  * - 既存の Server Action `addStackItem` を form action として使う
  * - 「成分を AI で推測」ボタンで AI 抽出 → hidden input に保存して submit
+ * - submit 成功後はフォームをリセット + details を閉じる
  */
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useFormStatus } from 'react-dom';
 import { addStackItem } from './actions';
 
@@ -35,6 +36,20 @@ export default function AddStackItemForm() {
   const [detecting, setDetecting] = useState(false);
   const [detected, setDetected] = useState<DetectResponse | null>(null);
   const [detectError, setDetectError] = useState<string | null>(null);
+  const formRef = useRef<HTMLFormElement>(null);
+
+  async function handleSubmit(formData: FormData) {
+    await addStackItem(formData);
+    // 成功時クリーンアップ
+    setName('');
+    setBrand('');
+    setDetected(null);
+    setDetectError(null);
+    formRef.current?.reset();
+    // 親の <details> を閉じる(任意)
+    const details = formRef.current?.closest('details') as HTMLDetailsElement | null;
+    if (details) details.removeAttribute('open');
+  }
 
   async function detectIngredients() {
     if (!name.trim()) {
@@ -72,7 +87,7 @@ export default function AddStackItemForm() {
     : '';
 
   return (
-    <form action={addStackItem} style={{ marginTop: 20 }}>
+    <form ref={formRef} action={handleSubmit} style={{ marginTop: 20 }}>
       <FormField
         label="サプリ名"
         name="name"

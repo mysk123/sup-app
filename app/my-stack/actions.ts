@@ -40,6 +40,45 @@ export async function addStackItem(formData: FormData) {
   revalidatePath('/my-stack');
 }
 
+export async function updateStackItem(args: {
+  id: string;
+  name?: string;
+  brand?: string | null;
+  dosage?: string | null;
+  timing?: string[];
+  notes?: string | null;
+  detected_ingredients?: string | null;
+}) {
+  const supabase = createClient();
+  const {
+    data: { user }
+  } = await supabase.auth.getUser();
+  if (!user) redirect('/login');
+
+  const update: Record<string, unknown> = {};
+  if (args.name !== undefined) update.name = args.name.trim();
+  if (args.brand !== undefined) update.brand = args.brand?.trim() || null;
+  if (args.dosage !== undefined) update.dosage = args.dosage?.trim() || null;
+  if (args.notes !== undefined) update.notes = args.notes?.trim() || null;
+  if (args.detected_ingredients !== undefined)
+    update.detected_ingredients = args.detected_ingredients?.trim() || null;
+  if (args.timing !== undefined)
+    update.timing = args.timing.length > 0 ? args.timing : null;
+
+  if (Object.keys(update).length === 0) return { ok: true };
+
+  const { error } = await supabase
+    .from('stack_items')
+    .update(update)
+    .eq('id', args.id)
+    .eq('user_id', user.id);
+
+  if (error) return { error: error.message };
+
+  revalidatePath('/my-stack');
+  return { ok: true };
+}
+
 export async function deleteStackItem(formData: FormData) {
   const supabase = createClient();
   const {
