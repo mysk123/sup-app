@@ -5,6 +5,7 @@ import { computeScore, type Target } from '@/lib/audit/score';
 import AiAnalysisPanel from './AiAnalysisPanel';
 import AskPanel from './AskPanel';
 import AddStackItemForm from './AddStackItemForm';
+import PremiumColumnCard from './PremiumColumnCard';
 import StackItemsList, { type StackItem } from './StackItemsList';
 import TargetSelector from './TargetSelector';
 import ScorePanel from './ScorePanel';
@@ -65,6 +66,23 @@ export default async function MyStackPage() {
       responsesByItem[r.stack_item_id] = [];
     responsesByItem[r.stack_item_id]!.push(r);
   }
+
+  // Premium Column の Featured 記事(最新の長文)
+  const { data: featuredTrendRaw } = await supabase
+    .from('trends')
+    .select('id, title, description, trend_type, body')
+    .eq('is_published', true)
+    .not('body', 'is', null)
+    .order('published_at', { ascending: false })
+    .limit(20);
+  const featuredTrend =
+    (featuredTrendRaw ?? []).find(
+      (t: any) => typeof t.body === 'string' && t.body.length > 1000
+    ) ?? null;
+  const { count: totalTrendsCount } = await supabase
+    .from('trends')
+    .select('*', { count: 'exact', head: true })
+    .eq('is_published', true);
 
   // profiles から targets を取得
   const { data: profile } = await supabase
@@ -215,6 +233,24 @@ export default async function MyStackPage() {
             ai_question_remaining: billing.ai_question_remaining,
             ai_limit_this_month: billing.ai_limit_this_month
           }}
+        />
+      )}
+
+      {/* Premium Column への誘導 */}
+      {billing && (
+        <PremiumColumnCard
+          isPro={billing.plan === 'pro'}
+          featured={
+            featuredTrend
+              ? {
+                  id: featuredTrend.id,
+                  title: featuredTrend.title,
+                  description: featuredTrend.description,
+                  trend_type: featuredTrend.trend_type
+                }
+              : null
+          }
+          totalArticles={totalTrendsCount ?? 0}
         />
       )}
 
