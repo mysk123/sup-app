@@ -6,6 +6,12 @@ import AiAnalysisPanel from './AiAnalysisPanel';
 import AskPanel from './AskPanel';
 import AddStackItemForm from './AddStackItemForm';
 import PremiumColumnCard from './PremiumColumnCard';
+import EffectTrackingPanel from './EffectTrackingPanel';
+import {
+  computeStats,
+  attributeItems,
+  type EffectLog
+} from '@/lib/effect/analyze';
 import StackItemsList, { type StackItem } from './StackItemsList';
 import TargetSelector from './TargetSelector';
 import ScorePanel from './ScorePanel';
@@ -110,6 +116,17 @@ export default async function MyStackPage() {
   // スコア計算
   const score = computeScore(stackItems, targets, oldest, effectResponses);
 
+  // 効果トラッキング: 主観チェックインを取得 → 統計・前後比較を算定
+  const { data: effectLogsRaw } = await supabase
+    .from('effect_logs')
+    .select('id, focus, sleep, mood, energy, note, confounds, created_at')
+    .eq('user_id', user.id)
+    .order('created_at', { ascending: false });
+  const effectLogs = (effectLogsRaw ?? []) as EffectLog[];
+  const effectStats = computeStats(effectLogs);
+  const effectAttributions = attributeItems(effectLogs, stackItems);
+  const activeCount = stackItems.filter((i) => i.is_active).length;
+
   return (
     <div className="container" style={{ maxWidth: 720 }}>
       {/* ヘッダー — 左上に折りたたみメニュー + 右にロゴ */}
@@ -211,6 +228,17 @@ export default async function MyStackPage() {
 
       {/* 監査結果(ルールベース) */}
       {findings.length > 0 && <AuditSection findings={findings} />}
+
+      {/* 効果トラッキング(実測スコア) */}
+      {billing && (
+        <EffectTrackingPanel
+          plan={billing.plan}
+          stats={effectStats}
+          attributions={effectAttributions}
+          structuralScore={activeCount > 0 ? score.total : null}
+          hasStack={activeCount > 0}
+        />
+      )}
 
       {/* AI 包括分析 */}
       {stackItems.filter((i) => i.is_active).length > 0 && billing && (

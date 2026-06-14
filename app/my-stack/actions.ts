@@ -179,6 +179,39 @@ export async function dismissMonitoringPrompt(prompt_id: string) {
   revalidatePath('/my-stack');
 }
 
+/** 効果トラッキング: 週次チェックイン(主観4軸)を記録 */
+export async function recordEffectLog(formData: FormData) {
+  const supabase = createClient();
+  const {
+    data: { user }
+  } = await supabase.auth.getUser();
+  if (!user) redirect('/login');
+
+  const clamp15 = (v: FormDataEntryValue | null) => {
+    const n = parseInt((v as string) ?? '', 10);
+    if (Number.isNaN(n)) return 3;
+    return Math.max(1, Math.min(5, n));
+  };
+
+  const allowed = ['poor_sleep', 'alcohol', 'sick', 'busy', 'exercised'];
+  const confounds = (formData.getAll('confounds') as string[]).filter((c) =>
+    allowed.includes(c)
+  );
+  const note = (formData.get('note') as string)?.trim() || null;
+
+  await supabase.from('effect_logs').insert({
+    user_id: user.id,
+    focus: clamp15(formData.get('focus')),
+    sleep: clamp15(formData.get('sleep')),
+    mood: clamp15(formData.get('mood')),
+    energy: clamp15(formData.get('energy')),
+    confounds: confounds.length > 0 ? confounds : null,
+    note
+  });
+
+  revalidatePath('/my-stack');
+}
+
 export async function toggleActiveStackItem(formData: FormData) {
   const supabase = createClient();
   const {
