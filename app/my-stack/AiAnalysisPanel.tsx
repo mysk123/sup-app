@@ -15,6 +15,8 @@ type Recommendation = {
   /** AI が新しいサプリの追加を提案している場合の検索キーワード(例: "L-テアニン", "アシュワガンダ KSM-66") */
   related_product_name?: string;
   related_product_dosage?: string;
+  /** 提案の根拠。your_data=本人の効果トラッキング(実測)に基づく */
+  evidence?: 'your_data' | 'structure' | 'general';
 };
 
 type Analysis = {
@@ -587,6 +589,24 @@ function RecommendationCard({ rec }: { rec: Recommendation }) {
         >
           {s.label}
         </span>
+        {rec.evidence === 'your_data' && (
+          <span
+            style={{
+              fontSize: 10,
+              fontFamily: 'Inter, sans-serif',
+              letterSpacing: '0.08em',
+              fontWeight: 700,
+              color: 'white',
+              background: 'var(--accent)',
+              padding: '3px 8px',
+              borderRadius: 100,
+              flexShrink: 0,
+              whiteSpace: 'nowrap'
+            }}
+          >
+            ◆ あなたのデータ
+          </span>
+        )}
         <span
           style={{
             fontSize: 14,

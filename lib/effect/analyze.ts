@@ -236,3 +236,48 @@ export const CONFIDENCE_LABEL: Record<Attribution['confidence'], string> = {
   low: '確度: 低',
   insufficient: 'データ不足'
 };
+
+/**
+ * AI 分析エンジン(/api/audit/ai)に渡すための効果トラッキング要約。
+ * 「効いている / 非レスポンダー / 判定待ち」を明示し、おすすめの根拠に使わせる。
+ */
+export function formatEffectForPrompt(
+  logs: EffectLog[],
+  items: { id: string; name: string; added_at: string; is_active: boolean }[]
+): string {
+  if (logs.length === 0) {
+    return '効果トラッキングの主観記録はまだありません(実測データなし)。';
+  }
+  const stats = computeStats(logs);
+  const attrs = attributeItems(logs, items);
+  const lines: string[] = [];
+  lines.push(`記録回数: ${stats.n} / 効果スコア(実測, 4軸平均): ${stats.overall}/100`);
+  lines.push(
+    '各軸の平均(1-5): ' +
+      stats.axes.map((a) => `${a.label} ${a.mean.toFixed(1)}`).join(' / ')
+  );
+  if (attrs.length > 0) {
+    lines.push('各サプリの追加前後の体感変化:');
+    for (const a of attrs) {
+      if (a.confidence === 'insufficient') {
+        lines.push(`- ${a.itemName}: 判定待ち(前後の記録が不足)`);
+        continue;
+      }
+      const t = a.top;
+      let verdict: string;
+      if (t && t.direction === 'up') {
+        verdict = `${t.label}が +${t.deltaRaw.toFixed(1)} 上振れ → 効いている可能性`;
+      } else if (t && t.direction === 'down') {
+        verdict = `${t.label}が ${t.deltaRaw.toFixed(1)} 低下 → 体感が下がっている/偶然の可能性`;
+      } else {
+        verdict = '明確な変化なし → 非レスポンダーの可能性';
+      }
+      let line = `- ${a.itemName}: ${verdict}(${CONFIDENCE_LABEL[a.confidence]}・前${a.nBefore}/後${a.nAfter}記録)`;
+      if (a.confounded) {
+        line += ` ※同時期に${a.confounders.join('・')}も追加で切り分け不能`;
+      }
+      lines.push(line);
+    }
+  }
+  return lines.join('\n');
+}

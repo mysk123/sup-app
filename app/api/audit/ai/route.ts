@@ -12,6 +12,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import { createClient } from '@/lib/supabase/server';
 import { auditStack, type StackItem as AuditStackItem } from '@/lib/audit/engine';
 import { getBillingStatus, recordAiUsage } from '@/lib/billing/usage';
+import { formatEffectForPrompt, type EffectLog } from '@/lib/effect/analyze';
 
 type DbStackItem = {
   id: string;
@@ -21,6 +22,7 @@ type DbStackItem = {
   timing: string[] | null;
   notes: string | null;
   is_active: boolean;
+  added_at: string;
 };
 
 const TIMING_LABEL: Record<string, string> = {
@@ -71,6 +73,12 @@ const ANALYSIS_SCHEMA = {
             type: 'string',
             description:
               '推奨用量(例: "200mg", "600mg/日")。related_product_name と組み合わせて使う。'
+          },
+          evidence: {
+            type: 'string',
+            enum: ['your_data', 'structure', 'general'],
+            description:
+              "この提案の根拠。'your_data'=ユーザー本人の効果トラッキング(実測)に基づく(例:非レスポンダーだから置換、効いてるから継続)。'structure'=スタック構成・ルール監査に基づく。'general'=一般的な栄養学。効果データを使った提案には必ず 'your_data' を設定。"
           }
         },
         required: ['title', 'description', 'priority'],
@@ -133,12 +141,11 @@ export async function POST() {
     );
   }
 
-  // スタック取得(active のみ)
-  const { data: items, error: dbError } = await supabase
+  // スタック取得(active/休止 両方 — 効果トラッキングの前後比較に added_at が要る)
+  const { data: allItems, error: dbError } = await supabase
     .from('stack_items')
-    .select('id, name, brand, dosage, timing, notes, is_active')
+    .select('id, name, brand, dosage, timing, notes, is_active, added_at')
     .eq('user_id', user.id)
-    .eq('is_active', true)
     .order('added_at', { ascending: false });
 
   if (dbError) {
@@ -147,12 +154,24 @@ export async function POST() {
       { status: 500 }
     );
   }
-  if (!items || items.length === 0) {
+  const items = (allItems ?? []).filter((i) => i.is_active);
+  if (items.length === 0) {
     return NextResponse.json(
       { error: 'まずサプリを1つ以上登録してから分析してください' },
       { status: 400 }
     );
   }
+
+  // 効果トラッキング(本人の主観記録)を要約 → おすすめの根拠に使わせる
+  const { data: effectLogsRaw } = await supabase
+    .from('effect_logs')
+    .select('id, focus, sleep, mood, energy, note, confounds, created_at')
+    .eq('user_id', user.id)
+    .order('created_at', { ascending: false });
+  const effectText = formatEffectForPrompt(
+    (effectLogsRaw ?? []) as EffectLog[],
+    allItems ?? []
+  );
 
   // ルールベース監査(AIに「これは既に検出済み」と伝えるため)
   const auditItems: AuditStackItem[] = items.map((i) => ({
@@ -171,26 +190,36 @@ export async function POST() {
 
   // プロンプト構築
   const stackText = formatStackForPrompt(items);
-  const userPrompt = `あなたはサプリメント・栄養の専門アドバイザーです。Sup. App ユーザーの現在のスタックを分析し、コンテキスト依存の改善案を返してください。
+  const userPrompt = `あなたはサプリメント・栄養の専門アドバイザーです。Sup. App ユーザーの現在のスタックと、本人が記録した「効果トラッキング(実測)」を分析し、コンテキスト依存の改善案を返してください。
 
 # ユーザーの現在のスタック
 ${stackText}
+
+# 効果トラッキング(ユーザー本人の主観記録・実測)
+${effectText}
 
 # ルールベース監査で既に検出済み(これらと重複しないこと)
 ${ruleFindingsText}
 
 # あなたの分析タスク
-1. **全体評価**: このユーザーは何を最適化しようとしているか?(集中力強化? 睡眠? 回復? 数値改善?)現在のスタックの強みと、どんな観点が抜けてるか
-2. **改善案 (最大5件)**: 具体的に何を追加・除去・タイミング調整すべきか
+1. **全体評価**: このユーザーは何を最適化しようとしているか?(集中力強化? 睡眠? 回復? 数値改善?)現在のスタックの強みと、どんな観点が抜けてるか。効果トラッキングがあれば、実測の体感と構成のズレにも触れる
+2. **改善案 (最大5件)**: 具体的に何を追加・除去・タイミング調整・継続すべきか
+   - **効果トラッキングのデータを最優先で使う**:
+     * 「効いている可能性」のサプリ → 継続を推奨し、除去や置換は提案しない
+     * 「非レスポンダーの可能性(明確な変化なし)」のサプリ → まず用量・タイミングの見直し、それでも変わらなければ別成分への置き換えを提案
+     * 「判定待ち」は『記録を続けると判定できる』旨に留め、断定しない
+     * 「切り分け不能(交絡)」のものは、その旨を踏まえて慎重に
+   - 効果データが無い/少ない場合は、無理に実測を語らず、構成ベースの提案でよい
    - ルールベースで検出済みの項目は除外
-   - 「足りない成分の補完」「シナジー候補」「タイミング最適化」「過剰摂取・コスト効率の警告」「ライフスタイル介入」を中心に
    - 各案には根拠(なぜそうするのか)を含める
+   - **evidence フィールドを必ず設定**: 本人の効果トラッキングに基づく提案は 'your_data'、スタック構成・監査由来は 'structure'、一般的な栄養学は 'general'
 3. **総括**: 1-2文で
 
 # トーン
 - 丁寧語(ですます調)で書いてください。
 - 専門家として落ち着いた説明、固すぎず親しみがあるトーン
 - 具体的・実用的(「〜を検討してみてください」「〜が推奨されます」など)
+- 効果データを語るときは確度・記録数に正直に(「断定」ではなく「示唆」)。誇大表現は避ける
 - 「医療アドバイスではない」等の断り書きは不要(UIで担保)
 
 JSON形式で、指定されたスキーマに従って返してください。`;
