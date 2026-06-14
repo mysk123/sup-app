@@ -92,6 +92,10 @@ export default function Hero3D() {
           display: mode === 'live' ? 'block' : 'none'
         }}
       />
+
+      {/* 静止フォールバック(スマホ等)の背景イラスト — オーバーレイの下に敷く */}
+      {mode === 'static' && <StaticKeyVisual />}
+
       {/* ビネット */}
       <div
         style={{
@@ -294,54 +298,102 @@ export default function Hero3D() {
         style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}
       />
 
-      {/* 静止フォールバックの選定チップ */}
-      {mode === 'static' && (
-        <div
-          style={{
-            position: 'absolute',
-            left: '50%',
-            top: '50%',
-            transform: 'translate(-50%,-58%)',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 8,
-            alignItems: 'center'
-          }}
-        >
-          {SELECTED.map((s) => (
-            <div
-              key={s.idx}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 8,
-                background: 'rgba(76,164,126,0.16)',
-                border: '1px solid rgba(95,224,168,0.45)',
-                color: '#d6f7e8',
-                fontSize: 13,
-                fontWeight: 500,
-                padding: '7px 16px',
-                borderRadius: 999
-              }}
-            >
-              <span
-                style={{
-                  width: 6,
-                  height: 6,
-                  borderRadius: '50%',
-                  background: '#5fe0a8',
-                  boxShadow: '0 0 8px #5fe0a8'
-                }}
-              />
-              {s.label}{' '}
-              <span style={{ color: '#7fc9a8', fontSize: 11.5 }}>
-                {s.score}
-              </span>
-            </div>
-          ))}
-        </div>
-      )}
     </div>
+  );
+}
+
+/* ───────── 静止キービジュアル(SVG) ─────────
+ * PC版の 3D シーンと同じ世界観:
+ * 二色カプセル群 + 中央の AI コア + 発光 + 選定カプセルへの接続線 */
+function StaticKeyVisual() {
+  const CX = 205;
+  const CY = 162;
+
+  const pills = [
+    { x: 178, y: 96, rot: -22, a: '#4ca47e', b: '#ffffff', kind: 'sel' },
+    { x: 286, y: 124, rot: 18, a: '#4ca47e', b: '#eafff6', kind: 'sel' },
+    { x: 250, y: 226, rot: -12, a: '#3aa07a', b: '#ffffff', kind: 'sel' },
+    { x: 116, y: 210, rot: 38, a: '#0f5b3e', b: '#f4efe0', kind: 'norm' },
+    { x: 312, y: 200, rot: -33, a: '#c8835f', b: '#f4efe0', kind: 'norm' },
+    { x: 205, y: 72, rot: 8, a: '#d8a657', b: '#ffffff', kind: 'norm' },
+    { x: 322, y: 268, rot: 24, a: '#06352a', b: '#4ca47e', kind: 'norm' },
+    { x: 250, y: 300, rot: 14, a: '#2f7d5c', b: '#eef7f1', kind: 'norm' },
+    { x: 140, y: 285, rot: -18, a: '#0f5b3e', b: '#f4efe0', kind: 'norm' },
+    { x: 338, y: 150, rot: -20, a: '#3a4a44', b: '#586b62', kind: 'rej' },
+    { x: 96, y: 138, rot: 30, a: '#3a4a44', b: '#586b62', kind: 'rej' }
+  ];
+
+  const L = 46;
+  const T = 18;
+  const r = 9;
+
+  const dots = [
+    [40, 60], [360, 50], [70, 320], [350, 320], [30, 200],
+    [380, 180], [180, 30], [300, 40], [120, 60], [260, 60],
+    [60, 260], [330, 110], [200, 340], [150, 200], [250, 130]
+  ];
+
+  function pillSvg(p: (typeof pills)[number], i: number) {
+    const op = p.kind === 'rej' ? 0.4 : 1;
+    const sc = p.kind === 'rej' ? 0.84 : 1;
+    const outline =
+      p.kind === 'sel' ? '#9bf0cf' : 'rgba(255,255,255,0.18)';
+    const glow =
+      p.kind === 'sel'
+        ? `<rect x="${-L / 2 - 3}" y="${-T / 2 - 3}" width="${L + 6}" height="${
+            T + 6
+          }" rx="${r + 3}" fill="#5fe0a8" filter="url(#kvglow)" opacity="0.5"/>`
+        : '';
+    return `<g transform="translate(${p.x} ${p.y}) rotate(${p.rot}) scale(${sc})" opacity="${op}">
+      ${glow}
+      <g clip-path="url(#kvclip)">
+        <rect x="${-L / 2}" y="${-T / 2}" width="${L / 2}" height="${T}" fill="${p.a}"/>
+        <rect x="0" y="${-T / 2}" width="${L / 2}" height="${T}" fill="${p.b}"/>
+      </g>
+      <rect x="${-L / 2}" y="${-T / 2}" width="${L}" height="${T}" rx="${r}" fill="none" stroke="${outline}" stroke-width="1"/>
+      <ellipse cx="${-L / 4}" cy="${-T / 4}" rx="${L / 5}" ry="${T / 6}" fill="rgba(255,255,255,0.28)"/>
+    </g>`;
+  }
+
+  const lines = pills
+    .filter((p) => p.kind === 'sel')
+    .map(
+      (p) =>
+        `<line x1="${CX}" y1="${CY}" x2="${p.x}" y2="${p.y}" stroke="#5fe0a8" stroke-width="1" opacity="0.32" stroke-dasharray="2 4"/>`
+    )
+    .join('');
+
+  const dotSvg = dots
+    .map(
+      (d) =>
+        `<circle cx="${d[0]}" cy="${d[1]}" r="1.1" fill="#4ca47e" opacity="0.4"/>`
+    )
+    .join('');
+
+  const coreSvg = `
+    <circle cx="${CX}" cy="${CY}" r="42" fill="#2f7d5c" filter="url(#kvglow)" opacity="0.45"/>
+    <ellipse cx="${CX}" cy="${CY}" rx="40" ry="15" fill="none" stroke="#5fe0a8" stroke-width="1.2" opacity="0.5"/>
+    <polygon points="${CX},${CY - 24} ${CX + 21},${CY - 11} ${CX + 21},${CY + 11} ${CX},${CY + 24} ${CX - 21},${CY + 11} ${CX - 21},${CY - 11}" fill="#0f5b3e" stroke="#5fe0a8" stroke-width="1.4"/>
+    <line x1="${CX}" y1="${CY - 24}" x2="${CX}" y2="${CY + 24}" stroke="#2f7d5c" stroke-width="1" opacity="0.7"/>
+    <line x1="${CX - 21}" y1="${CY - 11}" x2="${CX + 21}" y2="${CY + 11}" stroke="#2f7d5c" stroke-width="1" opacity="0.7"/>
+    <line x1="${CX + 21}" y1="${CY - 11}" x2="${CX - 21}" y2="${CY + 11}" stroke="#2f7d5c" stroke-width="1" opacity="0.7"/>`;
+
+  const svg = `<svg viewBox="0 0 400 360" preserveAspectRatio="xMidYMid slice" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <defs>
+      <clipPath id="kvclip"><rect x="${-L / 2}" y="${-T / 2}" width="${L}" height="${T}" rx="${r}"/></clipPath>
+      <filter id="kvglow" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="4"/></filter>
+    </defs>
+    ${dotSvg}
+    ${lines}
+    ${coreSvg}
+    ${pills.map(pillSvg).join('')}
+  </svg>`;
+
+  return (
+    <div
+      style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}
+      dangerouslySetInnerHTML={{ __html: svg }}
+    />
   );
 }
 
