@@ -5,6 +5,7 @@
  * メッセージ: 自分のサプリ習慣を、スコアで見る
  */
 import { createClient } from '@/lib/supabase/server';
+import Hero3D from './Hero3D';
 
 export default async function Home() {
   const supabase = createClient();
@@ -110,6 +111,10 @@ export default async function Home() {
           AI が改善案をご提案します。考える・書く・作るのパフォーマンスを、
           サプリで底上げしたい方のためのアプリです。
         </p>
+
+        {/* AI が最適なサプリを選定する 3D 演出 */}
+        <Hero3D />
+
         <div
           style={{
             display: 'flex',
