@@ -302,6 +302,8 @@ export default async function Home() {
           <PricingCard
             name="Pro"
             price="¥600"
+            oldPrice="¥980"
+            limited
             priceNote="月額(税込)"
             highlighted
             features={[
@@ -497,6 +499,8 @@ function FeatureCard({
 function PricingCard({
   name,
   price,
+  oldPrice,
+  limited,
   priceNote,
   features,
   highlighted,
@@ -505,6 +509,8 @@ function PricingCard({
 }: {
   name: string;
   price: string;
+  oldPrice?: string;
+  limited?: boolean;
   priceNote: string;
   features: string[];
   highlighted?: boolean;
@@ -552,6 +558,42 @@ function PricingCard({
       >
         {name.toUpperCase()}
       </div>
+      {limited && (
+        <div
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 6,
+            fontSize: 11,
+            fontWeight: 700,
+            color: 'var(--warm-accent)',
+            marginBottom: 8
+          }}
+        >
+          <span
+            style={{
+              background: 'var(--warm-accent)',
+              color: 'white',
+              padding: '3px 9px',
+              borderRadius: 100,
+              letterSpacing: '0.06em'
+            }}
+          >
+            今だけ
+          </span>
+          {oldPrice && (
+            <span
+              style={{
+                textDecoration: 'line-through',
+                color: 'var(--text-soft)',
+                fontWeight: 600
+              }}
+            >
+              通常 {oldPrice}/月
+            </span>
+          )}
+        </div>
+      )}
       <div
         style={{
           display: 'flex',
