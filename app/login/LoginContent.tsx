@@ -43,6 +43,8 @@ function detectInAppBrowser(ua: string): boolean {
   );
 }
 
+const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+
 export default function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -53,6 +55,13 @@ export default function LoginContent() {
   const [gisFailed, setGisFailed] = useState(false);
   const [inApp, setInApp] = useState(false);
   const [copied, setCopied] = useState(false);
+
+  // メール OTP ログイン
+  const [emailStep, setEmailStep] = useState<'email' | 'code'>('email');
+  const [email, setEmail] = useState('');
+  const [code, setCode] = useState('');
+  const [otpBusy, setOtpBusy] = useState(false);
+  const [otpError, setOtpError] = useState<string | null>(null);
 
   const queryError = searchParams.get('error');
 
@@ -138,6 +147,62 @@ export default function LoginContent() {
       .catch(() => {});
   }
 
+  async function sendCode() {
+    const addr = email.trim().toLowerCase();
+    if (!EMAIL_RE.test(addr)) {
+      setOtpError('メールアドレスの形式をご確認ください');
+      return;
+    }
+    setOtpBusy(true);
+    setOtpError(null);
+    try {
+      const supabase = createClient();
+      // shouldCreateUser: true → 初めてのメールアドレスならアカウントも作成
+      const { error } = await supabase.auth.signInWithOtp({
+        email: addr,
+        options: { shouldCreateUser: true }
+      });
+      if (error) {
+        setOtpError(error.message);
+      } else {
+        setEmail(addr);
+        setEmailStep('code');
+      }
+    } catch (e) {
+      setOtpError(e instanceof Error ? e.message : 'コードの送信に失敗しました');
+    } finally {
+      setOtpBusy(false);
+    }
+  }
+
+  async function verifyCode() {
+    const token = code.replace(/\s/g, '');
+    if (token.length < 6) {
+      setOtpError('メールに届いた6桁のコードを入力してください');
+      return;
+    }
+    setOtpBusy(true);
+    setOtpError(null);
+    try {
+      const supabase = createClient();
+      const { error } = await supabase.auth.verifyOtp({
+        email: email.trim().toLowerCase(),
+        token,
+        type: 'email'
+      });
+      if (error) {
+        setOtpError('コードが正しくないか、期限切れです。もう一度お試しください。');
+        setOtpBusy(false);
+      } else {
+        router.push(safeNext);
+        router.refresh();
+      }
+    } catch (e) {
+      setOtpError(e instanceof Error ? e.message : '認証に失敗しました');
+      setOtpBusy(false);
+    }
+  }
+
   const showHelp = inApp || gisFailed;
 
   return (
@@ -158,11 +223,7 @@ export default function LoginContent() {
         }}
       >
         <span
-          style={{
-            fontWeight: 700,
-            fontSize: 22,
-            letterSpacing: '-0.02em'
-          }}
+          style={{ fontWeight: 700, fontSize: 22, letterSpacing: '-0.02em' }}
         >
           Sup<span style={{ color: 'var(--accent)' }}>.</span>
           <span
@@ -186,7 +247,7 @@ export default function LoginContent() {
           marginBottom: 14
         }}
       >
-        ログイン
+        ログイン / 新規登録
       </h1>
       <p
         style={{
@@ -196,7 +257,7 @@ export default function LoginContent() {
           marginBottom: 32
         }}
       >
-        My Stack を端末を跨いで同期。Google アカウントでログインしてください。
+        My Stack を端末を跨いで同期。Google またはメールアドレスでご利用いただけます。
       </p>
 
       {/* コールバック失敗(?error=) */}
@@ -249,18 +310,18 @@ export default function LoginContent() {
             }}
           >
             {inApp
-              ? 'Threads や Instagram などのアプリ内ブラウザは、Google のセキュリティ仕様でログインがブロックされます。お手数ですが、画面右上(または「…」メニュー)の「ブラウザで開く」から Safari / Chrome で開き直してください。'
-              : '広告ブロッカー・プライバシーブラウザ・アプリ内ブラウザだと Google ログインが読み込めないことがあります。Safari / Chrome で開き直すか、拡張機能を一時的にオフにしてお試しください。'}
+              ? 'Threads・Instagram・LINE などのアプリ内ブラウザは、Google 側の仕様でログインがブロックされます。下の「メールでログイン」ならそのままご利用いただけます（Google を使いたい場合は Safari / Chrome で開き直してください）。'
+              : '広告ブロッカー・プライバシーブラウザ等で Google ログインが読み込めないことがあります。下の「メールでログイン」をご利用いただくか、Safari / Chrome で開き直してください。'}
           </div>
           <button
             onClick={copyUrl}
             style={{
-              background: 'var(--accent)',
-              color: 'white',
-              border: 'none',
-              padding: '9px 16px',
+              background: 'transparent',
+              color: 'var(--accent)',
+              border: '1px solid var(--accent)',
+              padding: '7px 14px',
               borderRadius: 8,
-              fontSize: 13,
+              fontSize: 12,
               fontWeight: 700,
               cursor: 'pointer',
               fontFamily: 'inherit'
@@ -268,35 +329,17 @@ export default function LoginContent() {
           >
             {copied ? '✓ コピーしました' : 'このページのURLをコピー'}
           </button>
-          <span
-            style={{
-              fontSize: 12,
-              color: 'var(--text-sub)',
-              marginLeft: 10
-            }}
-          >
-            → ブラウザに貼り付けて開く
-          </span>
         </div>
       )}
 
+      {/* Google ボタン */}
       <div
         ref={buttonRef}
-        style={{
-          display: 'flex',
-          justifyContent: 'flex-start',
-          minHeight: 44
-        }}
+        style={{ display: 'flex', justifyContent: 'flex-start', minHeight: 44 }}
       />
 
       {loading && (
-        <div
-          style={{
-            marginTop: 16,
-            fontSize: 13,
-            color: 'var(--text-sub)'
-          }}
-        >
+        <div style={{ marginTop: 16, fontSize: 13, color: 'var(--text-sub)' }}>
           認証中...
         </div>
       )}
@@ -318,9 +361,214 @@ export default function LoginContent() {
         </div>
       )}
 
+      {/* 区切り */}
       <div
         style={{
-          marginTop: 32,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 12,
+          margin: '24px 0 20px'
+        }}
+      >
+        <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
+        <span style={{ fontSize: 12, color: 'var(--text-soft)' }}>または</span>
+        <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
+      </div>
+
+      {/* メール OTP ログイン */}
+      <div
+        style={{
+          background: 'var(--card-bg)',
+          border: '1px solid var(--border)',
+          borderRadius: 12,
+          padding: '18px 20px'
+        }}
+      >
+        <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 6 }}>
+          メールでログイン / 新規登録
+        </div>
+
+        {emailStep === 'email' ? (
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              sendCode();
+            }}
+          >
+            <div
+              style={{
+                fontSize: 12.5,
+                color: 'var(--text-sub)',
+                lineHeight: 1.7,
+                marginBottom: 12
+              }}
+            >
+              メールアドレスに6桁の確認コードをお送りします。LINE・Threads
+              などのアプリ内ブラウザでもそのままご利用いただけます。
+            </div>
+            <input
+              type="email"
+              inputMode="email"
+              autoComplete="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="you@example.com"
+              style={{
+                width: '100%',
+                padding: '11px 13px',
+                border: '1px solid var(--border)',
+                borderRadius: 8,
+                fontSize: 15,
+                fontFamily: 'inherit',
+                marginBottom: 12
+              }}
+            />
+            <button
+              type="submit"
+              disabled={otpBusy}
+              style={{
+                width: '100%',
+                background: 'var(--accent)',
+                color: 'white',
+                border: 'none',
+                padding: '12px 18px',
+                borderRadius: 10,
+                fontSize: 14,
+                fontWeight: 700,
+                cursor: otpBusy ? 'wait' : 'pointer',
+                fontFamily: 'inherit',
+                opacity: otpBusy ? 0.7 : 1
+              }}
+            >
+              {otpBusy ? '送信中…' : '確認コードを送る'}
+            </button>
+          </form>
+        ) : (
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              verifyCode();
+            }}
+          >
+            <div
+              style={{
+                fontSize: 12.5,
+                color: 'var(--text-sub)',
+                lineHeight: 1.7,
+                marginBottom: 12
+              }}
+            >
+              <strong style={{ color: 'var(--text-main)' }}>{email}</strong>{' '}
+              に6桁のコードをお送りしました。メールをご確認のうえ入力してください。
+            </div>
+            <input
+              type="text"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              value={code}
+              onChange={(e) =>
+                setCode(e.target.value.replace(/[^0-9]/g, '').slice(0, 6))
+              }
+              placeholder="123456"
+              maxLength={6}
+              style={{
+                width: '100%',
+                padding: '11px 13px',
+                border: '1px solid var(--border)',
+                borderRadius: 8,
+                fontSize: 20,
+                letterSpacing: '0.3em',
+                textAlign: 'center',
+                fontFamily: 'inherit',
+                marginBottom: 12
+              }}
+            />
+            <button
+              type="submit"
+              disabled={otpBusy}
+              style={{
+                width: '100%',
+                background: 'var(--accent)',
+                color: 'white',
+                border: 'none',
+                padding: '12px 18px',
+                borderRadius: 10,
+                fontSize: 14,
+                fontWeight: 700,
+                cursor: otpBusy ? 'wait' : 'pointer',
+                fontFamily: 'inherit',
+                opacity: otpBusy ? 0.7 : 1
+              }}
+            >
+              {otpBusy ? '確認中…' : 'ログイン'}
+            </button>
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                marginTop: 12,
+                fontSize: 12.5
+              }}
+            >
+              <button
+                type="button"
+                onClick={() => {
+                  setEmailStep('email');
+                  setCode('');
+                  setOtpError(null);
+                }}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: 'var(--text-sub)',
+                  cursor: 'pointer',
+                  fontFamily: 'inherit',
+                  padding: 0
+                }}
+              >
+                ← メールアドレスを変更
+              </button>
+              <button
+                type="button"
+                onClick={sendCode}
+                disabled={otpBusy}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: 'var(--accent)',
+                  fontWeight: 700,
+                  cursor: otpBusy ? 'wait' : 'pointer',
+                  fontFamily: 'inherit',
+                  padding: 0
+                }}
+              >
+                コードを再送
+              </button>
+            </div>
+          </form>
+        )}
+
+        {otpError && (
+          <div
+            style={{
+              marginTop: 12,
+              padding: '10px 12px',
+              background: '#fef2f2',
+              border: '1px solid #fecaca',
+              color: '#991b1b',
+              borderRadius: 8,
+              fontSize: 12.5,
+              lineHeight: 1.6
+            }}
+          >
+            {otpError}
+          </div>
+        )}
+      </div>
+
+      <div
+        style={{
+          marginTop: 24,
           padding: '14px 16px',
           background: 'var(--accent-light)',
           borderRadius: 10,
