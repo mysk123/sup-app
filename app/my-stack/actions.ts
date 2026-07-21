@@ -212,6 +212,29 @@ export async function recordEffectLog(formData: FormData) {
   revalidatePath('/my-stack');
 }
 
+/** メルマガ購読の同意/解除(ログインユーザー本人) */
+export async function setNewsletterSubscription(optIn: boolean) {
+  const supabase = createClient();
+  const {
+    data: { user }
+  } = await supabase.auth.getUser();
+  if (!user) redirect('/login');
+
+  const { error } = await supabase.from('newsletter_subscriptions').upsert(
+    {
+      user_id: user.id,
+      email: user.email,
+      subscribed: optIn,
+      updated_at: new Date().toISOString()
+    },
+    { onConflict: 'user_id' }
+  );
+  if (error) return { error: error.message };
+
+  revalidatePath('/my-stack');
+  return { ok: true };
+}
+
 export async function toggleActiveStackItem(formData: FormData) {
   const supabase = createClient();
   const {

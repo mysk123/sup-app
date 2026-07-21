@@ -29,6 +29,8 @@ export async function sendEmail(args: {
   subject: string;
   text: string;
   html: string;
+  /** 指定すると List-Unsubscribe をこの URL(ワンクリック解除)にする。メルマガ用。 */
+  listUnsubscribeUrl?: string;
 }) {
   const resend = getResend();
   return resend.emails.send({
@@ -40,10 +42,82 @@ export async function sendEmail(args: {
     replyTo: REPLY_TO,
     // List-Unsubscribe ヘッダ(Gmail/Outlook の真面目な送信者扱いを得る)
     headers: {
-      'List-Unsubscribe': `<mailto:${REPLY_TO}?subject=unsubscribe>, <https://app.sup-app.org/my-stack>`,
+      'List-Unsubscribe': args.listUnsubscribeUrl
+        ? `<${args.listUnsubscribeUrl}>`
+        : `<mailto:${REPLY_TO}?subject=unsubscribe>, <https://app.sup-app.org/my-stack>`,
       'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click'
     }
   });
+}
+
+/**
+ * メルマガ(無料号)テンプレート。
+ * body はプレーンテキスト(改行区切り)を受け取り、本文に整形する。
+ * 購読解除リンク(トークン)を必ずフッターに入れる(特定電子メール法対応)。
+ */
+export function buildNewsletterEmail(args: {
+  subject: string;
+  body: string;
+  unsubscribeUrl: string;
+}) {
+  const paragraphs = args.body
+    .split(/\n{2,}/)
+    .map((p) => p.trim())
+    .filter(Boolean);
+
+  const bodyHtml = paragraphs
+    .map(
+      (p) =>
+        `<p style="font-size:15px;color:#1c1c1c;line-height:1.9;margin:0 0 18px;">${p
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/\n/g, '<br>')}</p>`
+    )
+    .join('');
+
+  const text = `${args.body}
+
+────────────────
+配信の停止はこちら:
+${args.unsubscribeUrl}
+
+Sup. App / 運営: 矢崎 誠人(屋号: Place to talk)
+特定商取引法に基づく表示: https://app.sup-app.org/tokushoho`;
+
+  const html = `<!DOCTYPE html>
+<html lang="ja">
+<body style="margin:0;padding:0;background:#fafaf7;font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans',sans-serif;color:#1c1c1c;">
+  <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background:#fafaf7;padding:32px 16px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="max-width:560px;background:white;border-radius:14px;border:1px solid #e8e6e0;">
+          <tr>
+            <td style="padding:32px 32px 8px;">
+              <div style="font-weight:700;font-size:18px;letter-spacing:-0.02em;margin-bottom:24px;">
+                Sup<span style="color:#0f5b3e;">.</span>
+                <span style="margin-left:6px;font-size:11px;color:#7a7a7a;font-weight:600;">App</span>
+              </div>
+              ${bodyHtml}
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:18px 32px;border-top:1px solid #e8e6e0;font-size:11px;color:#9a9a9a;line-height:1.7;">
+              このメールは Sup. App のメール配信に同意された方にお送りしています。<br>
+              配信の停止は <a href="${args.unsubscribeUrl}" style="color:#0f5b3e;">こちら（ワンクリック）</a> から。<br><br>
+              Sup. App<br>
+              運営: 矢崎 誠人(屋号: Place to talk)<br>
+              <a href="https://app.sup-app.org/tokushoho" style="color:#9a9a9a;">特定商取引法に基づく表示</a> ・ <a href="https://app.sup-app.org/privacy" style="color:#9a9a9a;">プライバシーポリシー</a>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+
+  return { subject: args.subject, text, html };
 }
 
 /** 振り返りリマインダーのメールテンプレート */

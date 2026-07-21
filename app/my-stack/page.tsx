@@ -7,6 +7,7 @@ import AskPanel from './AskPanel';
 import AddStackItemForm from './AddStackItemForm';
 import PremiumColumnCard from './PremiumColumnCard';
 import EffectTrackingPanel from './EffectTrackingPanel';
+import NewsletterOptIn from './NewsletterOptIn';
 import {
   computeStats,
   attributeItems,
@@ -126,6 +127,14 @@ export default async function MyStackPage() {
   const effectStats = computeStats(effectLogs);
   const effectAttributions = attributeItems(effectLogs, stackItems);
   const activeCount = stackItems.filter((i) => i.is_active).length;
+
+  // メルマガ購読状態
+  const { data: newsletterSub } = await supabase
+    .from('newsletter_subscriptions')
+    .select('subscribed')
+    .eq('user_id', user.id)
+    .maybeSingle();
+  const newsletterSubscribed = newsletterSub?.subscribed === true;
 
   return (
     <div className="container" style={{ maxWidth: 720 }}>
@@ -331,6 +340,11 @@ export default async function MyStackPage() {
         duePromptsByItem={duePromptsByItem as any}
         responsesByItem={responsesByItem as any}
       />
+
+      {/* メール配信のオプトイン */}
+      <div style={{ marginTop: 28 }}>
+        <NewsletterOptIn initialSubscribed={newsletterSubscribed} />
+      </div>
     </div>
   );
 }
