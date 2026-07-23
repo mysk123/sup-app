@@ -134,7 +134,15 @@ export default async function MyStackPage() {
     .select('subscribed')
     .eq('user_id', user.id)
     .maybeSingle();
-  const newsletterSubscribed = newsletterSub?.subscribed === true;
+  let newsletterSubscribed = newsletterSub?.subscribed === true;
+  // レコードが無い会員は自動で購読ON
+  // (ログイン画面に「登録によりお知らせメール配信に登録される」旨を明記済み。解除はいつでも可)
+  if (!newsletterSub && user.email) {
+    const { error: enrollError } = await supabase
+      .from('newsletter_subscriptions')
+      .insert({ user_id: user.id, email: user.email, subscribed: true });
+    if (!enrollError) newsletterSubscribed = true;
+  }
 
   return (
     <div className="container" style={{ maxWidth: 720 }}>

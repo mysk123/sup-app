@@ -566,6 +566,27 @@ export default function LoginContent() {
         )}
       </div>
 
+      {/* 同意文言(メルマガ自動登録の根拠) */}
+      <p
+        style={{
+          marginTop: 18,
+          fontSize: 11.5,
+          color: 'var(--text-soft)',
+          lineHeight: 1.75
+        }}
+      >
+        ログイン / 新規登録により、
+        <a href="/terms" style={{ color: 'var(--text-sub)' }}>
+          利用規約
+        </a>
+        ・
+        <a href="/privacy" style={{ color: 'var(--text-sub)' }}>
+          プライバシーポリシー
+        </a>
+        に同意し、Sup. App からのお知らせメール配信に登録されます
+        （メール内のリンクや My Stack からいつでも解除できます）。
+      </p>
+
       <div
         style={{
           marginTop: 24,
