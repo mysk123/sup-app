@@ -2,16 +2,27 @@
 
 import { useState } from 'react';
 
+type Segment = 'all' | 'free' | 'pro';
+
+const SEGMENT_LABELS: Record<Segment, string> = {
+  all: '全員',
+  free: '無料ユーザー',
+  pro: 'Pro'
+};
+
 export default function NewsletterAdmin({
-  subscriberCount
+  counts
 }: {
-  subscriberCount: number;
+  counts: { all: number; free: number; pro: number };
 }) {
   const [subject, setSubject] = useState('');
   const [body, setBody] = useState('');
+  const [segment, setSegment] = useState<Segment>('all');
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  const targetCount = counts[segment];
 
   async function send(testOnly: boolean) {
     if (!subject.trim() || !body.trim()) {
@@ -20,7 +31,7 @@ export default function NewsletterAdmin({
     }
     if (!testOnly) {
       const ok = window.confirm(
-        `購読者 ${subscriberCount} 名に配信します。よろしいですか?`
+        `${SEGMENT_LABELS[segment]}の購読者 ${targetCount} 名に配信します。よろしいですか?`
       );
       if (!ok) return;
     }
@@ -31,7 +42,12 @@ export default function NewsletterAdmin({
       const res = await fetch('/api/admin/send-newsletter', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ subject: subject.trim(), body: body.trim(), testOnly })
+        body: JSON.stringify({
+          subject: subject.trim(),
+          body: body.trim(),
+          testOnly,
+          segment
+        })
       });
       const data = await res.json();
       if (!res.ok) {
@@ -40,7 +56,7 @@ export default function NewsletterAdmin({
         setResult(
           testOnly
             ? `テスト送信しました(自分宛)。届いた見た目を確認してください。`
-            : `配信完了: ${data.sent} 件送信 / ${data.failed} 件失敗(対象 ${data.recipients} 名)`
+            : `配信完了[${SEGMENT_LABELS[segment]}]: ${data.sent} 件送信 / ${data.failed} 件失敗(対象 ${data.recipients} 名)`
         );
       }
     } catch (e) {
@@ -68,6 +84,40 @@ export default function NewsletterAdmin({
         padding: '22px 24px'
       }}
     >
+      <label
+        style={{
+          display: 'block',
+          fontSize: 12,
+          fontWeight: 600,
+          color: 'var(--text-sub)',
+          marginBottom: 6
+        }}
+      >
+        配信対象
+      </label>
+      <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
+        {(['all', 'free', 'pro'] as Segment[]).map((s) => (
+          <button
+            key={s}
+            type="button"
+            onClick={() => setSegment(s)}
+            style={{
+              padding: '8px 16px',
+              borderRadius: 999,
+              fontSize: 13,
+              fontWeight: 700,
+              fontFamily: 'inherit',
+              cursor: 'pointer',
+              border: `1px solid ${segment === s ? 'var(--accent)' : 'var(--border)'}`,
+              background: segment === s ? 'var(--accent-light)' : 'transparent',
+              color: segment === s ? 'var(--accent-dark)' : 'var(--text-sub)'
+            }}
+          >
+            {SEGMENT_LABELS[s]} ({counts[s]})
+          </button>
+        ))}
+      </div>
+
       <label
         style={{
           display: 'block',
@@ -140,7 +190,9 @@ export default function NewsletterAdmin({
             opacity: busy ? 0.7 : 1
           }}
         >
-          {busy ? '送信中…' : `全員に配信(${subscriberCount}名)`}
+          {busy
+            ? '送信中…'
+            : `${SEGMENT_LABELS[segment]}に配信(${targetCount}名)`}
         </button>
       </div>
 

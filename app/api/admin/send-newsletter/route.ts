@@ -2,8 +2,9 @@
  * POST /api/admin/send-newsletter
  * 無料メルマガを、購読同意済みのユーザーへ配信する(管理者のみ)。
  *
- * body: { subject: string; body: string; testOnly?: boolean }
+ * body: { subject: string; body: string; testOnly?: boolean; segment?: 'all' | 'free' | 'pro' }
  *  - testOnly=true のときは、実行した管理者本人にだけ送る(下書き確認用)
+ *  - segment: 配信対象。free=無料プランのみ / pro=Proのみ / all=購読者全員(既定)
  */
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
@@ -21,12 +22,18 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'admin only' }, { status: 403 });
   }
 
-  let payload: { subject?: string; body?: string; testOnly?: boolean };
+  let payload: {
+    subject?: string;
+    body?: string;
+    testOnly?: boolean;
+    segment?: 'all' | 'free' | 'pro';
+  };
   try {
     payload = await request.json();
   } catch {
     return NextResponse.json({ error: 'invalid JSON' }, { status: 400 });
   }
+  const segment = payload.segment ?? 'all';
   const subject = payload.subject?.trim();
   const body = payload.body?.trim();
   if (!subject || !body) {
@@ -69,6 +76,23 @@ export async function POST(request: Request) {
       );
     }
     recipients = (data ?? []) as Sub[];
+
+    // プラン別セグメント(free/pro)
+    if (segment !== 'all' && recipients.length > 0) {
+      const ids = recipients.map((r) => r.user_id);
+      const { data: profs } = await admin
+        .from('profiles')
+        .select('user_id, plan')
+        .in('user_id', ids);
+      const proSet = new Set(
+        (profs ?? [])
+          .filter((p: { plan: string | null }) => p.plan === 'pro')
+          .map((p: { user_id: string }) => p.user_id)
+      );
+      recipients = recipients.filter((r) =>
+        segment === 'pro' ? proSet.has(r.user_id) : !proSet.has(r.user_id)
+      );
+    }
   }
 
   let sent = 0;
@@ -95,6 +119,7 @@ export async function POST(request: Request) {
   return NextResponse.json({
     ok: true,
     testOnly: !!payload.testOnly,
+    segment,
     recipients: recipients.length,
     sent,
     failed

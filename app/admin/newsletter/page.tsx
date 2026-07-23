@@ -22,10 +22,23 @@ export default async function AdminNewsletterPage() {
   }
 
   const admin = createAdminClient();
-  const { count } = await admin
+  const { data: subs } = await admin
     .from('newsletter_subscriptions')
-    .select('*', { count: 'exact', head: true })
+    .select('user_id')
     .eq('subscribed', true);
+  const ids = (subs ?? []).map((s: { user_id: string }) => s.user_id);
+  let proCount = 0;
+  if (ids.length > 0) {
+    const { data: profs } = await admin
+      .from('profiles')
+      .select('user_id, plan')
+      .in('user_id', ids);
+    proCount = (profs ?? []).filter(
+      (p: { plan: string | null }) => p.plan === 'pro'
+    ).length;
+  }
+  const count = ids.length;
+  const freeCount = count - proCount;
 
   return (
     <div className="container" style={{ maxWidth: 640, padding: '40px 20px' }}>
@@ -60,11 +73,14 @@ export default async function AdminNewsletterPage() {
         }}
       >
         現在の購読者(同意済み):{' '}
-        <strong style={{ color: 'var(--accent)' }}>{count ?? 0}</strong> 名。
-        まず「テスト送信」で自分に届く見た目を確認してから、全員に配信してください。
+        <strong style={{ color: 'var(--accent)' }}>{count}</strong> 名
+        (無料 {freeCount} / Pro {proCount})。
+        まず「テスト送信」で自分に届く見た目を確認してから配信してください。
       </p>
 
-      <NewsletterAdmin subscriberCount={count ?? 0} />
+      <NewsletterAdmin
+        counts={{ all: count, free: freeCount, pro: proCount }}
+      />
     </div>
   );
 }
